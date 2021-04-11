@@ -31,6 +31,20 @@ def reform_data(old_dir, new_dir):
                 new.write(line.replace(',', ' '))
             else: 
                 new.write(line.replace(',', ' ').rstrip() + ',')
+
+def get_metadata(skill_matrix, df_total):
+    skill_cnt = skill_matrix.shape[0]
+    single_skill_cnt = 0
+    for i in range(skill_cnt):
+        if skill_matrix[i, i] == 1:
+            single_skill_cnt+=1
+        else:
+            break
+    # i.e., correctness
+    # ! In this sense, both 'correct' and 'incorrect' must occur in the dataset
+    max_idx =  np.max([np.max(i) for _, i in enumerate(df_total["correctness"])])
+    
+    return single_skill_cnt, skill_cnt, max_idx
                 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, o):

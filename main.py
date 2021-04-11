@@ -11,29 +11,23 @@ def main():
     test_dir = "assist09_test.csv"
     skill_matrix_dir = "assist09_skill_matrix.txt"
     qs_graph_dir = "assist09_qs_graph.json"
+    # get skill cnt
+    # skill idx -> 0 ~ skill_cnt - 1 
+    # question idx -> skill_cnt ~ max_idx - 2
+    # correctness idx -> max_idx - 1, max_idx 
+    # please refer to utils.get_metadata to see how to get them
     node_feature_size = 100
+    single_skill_cnt = 123
+    skill_cnt = 167
+    max_idx = 17905
     ####    end     ####
     
     df_train = get_dataframe(train_dir)
     df_test = get_dataframe(test_dir)
     # use this dataframe to extract the whole q-s graph
     df_total = pd.concat([df_train, df_test], ignore_index=True)
-
-    # get skill cnt
-    # skill idx -> 0 ~ skill_cnt - 1 
-    # question idx -> skill_cnt ~ max_idx - 2
-    # correctness idx -> max_idx - 1, max_idx 
     skill_matrix = np.loadtxt(skill_matrix_dir)
-    skill_cnt = skill_matrix.shape[0]
-    single_skill_cnt = 0
-    for i in range(skill_cnt):
-        if skill_matrix[i, i] == 1:
-            single_skill_cnt+=1
-        else:
-            break
-    # i.e., correctness
-    # ! In this sense, both 'correct' and 'incorrect' must occur in the dataset
-    max_idx =  np.max([np.max(i) for _, i in enumerate(df_total["correctness"])]) 
+
     print("single skill: 0 ~ {}, multi-skill: {} ~ {}, question: {} ~ {}, correctness: {} and {}"\
         .format(single_skill_cnt - 1, single_skill_cnt, skill_cnt - 1, skill_cnt, max_idx - 2, max_idx - 1, max_idx))
     f = open(qs_graph_dir, "r")
@@ -86,6 +80,7 @@ def main():
     assert qs_graph_torch.num_edges == edge_num
     assert qs_graph_torch.num_nodes == node_num
     assert qs_graph_torch.num_node_features == node_feature_size
+    assert qs_graph_torch.is_undirected() == True
     
     print("edge_num : {}, node_num : {}".format(qs_graph_torch.num_edges, qs_graph_torch.num_nodes))
     
