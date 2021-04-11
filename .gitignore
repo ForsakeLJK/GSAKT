@@ -169,3 +169,5 @@ cython_debug/
 data/
 
 assist09_*
+
+test.py
