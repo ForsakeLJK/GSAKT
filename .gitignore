@@ -169,6 +169,7 @@ cython_debug/
 data/
 
 assist09_*
+ednet_*
 
 test.py
 
