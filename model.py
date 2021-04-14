@@ -10,7 +10,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, training=True):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir):
         """[summary]
 
         Args:
@@ -22,8 +22,6 @@ class Model(nn.Module):
             qs_graph_dir ([type]): [description]
         """
         super(Model, self).__init__()
-        
-        self.training = training
         
         self.gcn_layer_num = 3
         # TODO: 
@@ -85,6 +83,11 @@ class Model(nn.Module):
         
         self.pos_embedding = nn.Embedding(seq_len - 1, output_dim)
         
+        self.dropout_layers = nn.ModuleList()
+
+        self.dropout_layers.append(nn.Dropout(p=self.dropout[0]))
+        self.dropout_layers.append(nn.Dropout(p=self.dropout[2]))
+        
     
     def forward(self, hist_seq, hist_answers, new_seq):
         """Forward
@@ -102,7 +105,7 @@ class Model(nn.Module):
             x = self.convs[i](x, edge_index)
             # emb = x
             x = F.relu(x)
-            x = F.dropout(x, p=self.dropout[0], training=self.training)
+            x = self.dropout_layers[0](x)
             if not i == self.gcn_layer_num - 1:
                 x = self.lns[i](x)
         
@@ -130,7 +133,7 @@ class Model(nn.Module):
         
         atn = self.lns[2](atn + query).permute(1,0,2)
         
-        ffn = F.dropout(self.FFN[1](F.relu(self.FFN[0](atn))), p=self.dropout[2], training=self.training)
+        ffn = self.dropout_layers[1](self.FFN[1](F.relu(self.FFN[0](atn))))
         ffn = self.lns[3](ffn + atn)
         
         pred = self.linears[4](ffn)
