@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
-from utils import get_dataframe, NumpyEncoder
+from utils import get_dataframe, NumpyEncoder, get_metadata
 import json
-
 
 
 train_dir = "assist09_train.csv"
@@ -13,22 +12,10 @@ df_train = get_dataframe(train_dir)
 df_test = get_dataframe(test_dir)
 # use this to extract the whole q-s graph
 df_total = pd.concat([df_train, df_test], ignore_index=True)
-
-# get skill cnt
-# skill idx -> 0 ~ skill_cnt - 1 
-# question idx -> skill_cnt ~ max_idx - 2
-# correctness idx -> max_idx - 1, max_idx 
 skill_matrix = np.loadtxt(skill_matrix_dir)
-skill_cnt = skill_matrix.shape[0]
-single_skill_cnt = 0
-for i in range(skill_cnt):
-    if skill_matrix[i, i] == 1:
-        single_skill_cnt+=1
-    else:
-        break
-# i.e., correctness
-# ! In this sense, both 'correct' and 'incorrect' must occur in the dataset
-max_idx =  np.max([np.max(i) for _, i in enumerate(df_total["correctness"])]) 
+
+single_skill_cnt, skill_cnt, max_idx = get_metadata(skill_matrix, df_total)
+
 print("single skill: 0 ~ {}, multi-skill: {} ~ {}, question: {} ~ {}, correctness: {} and {}"\
       .format(single_skill_cnt - 1, single_skill_cnt, skill_cnt - 1, skill_cnt, max_idx - 2, max_idx - 1, max_idx))
 

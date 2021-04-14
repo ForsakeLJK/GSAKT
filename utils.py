@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import json
+from matplotlib import pyplot as plt
 
 def get_dataframe(data_dir):
     """Convert Dataset into Dataframe
@@ -55,3 +56,16 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(o, np.ndarray):
             return o.tolist()
         return super().default(self, o)
+    
+# reform_data("data/ednet_5000_3/ednet_5000_3_train.csv", "ednet_train.csv")
+# df = get_dataframe("ednet_train.csv")
+# print(df["seq_len"].max())
+# print(df["seq_len"].mode())
+# print(df["seq_len"].value_counts().head(20))
+# print(len(df))
+# df = get_dataframe("assist09_train.csv")
+# print(df["seq_len"].value_counts())
+# hist = df.hist(column="seq_len", bins=1000)
+# plt.xlim((0, 200))
+# plt.xticks(np.arange(0, 220, 20))
+# plt.savefig("figures/fig.png")
