@@ -174,3 +174,5 @@ ednet_*
 test.py
 
 figures/
+
+log/
