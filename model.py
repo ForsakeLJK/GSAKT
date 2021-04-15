@@ -10,7 +10,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device):
         """[summary]
 
         Args:
@@ -22,6 +22,8 @@ class Model(nn.Module):
             qs_graph_dir ([type]): [description]
         """
         super(Model, self).__init__()
+        
+        self.device = device
         
         self.gcn_layer_num = 3
         self.dropout = [0.3, 0.2, 0.2]
@@ -38,7 +40,7 @@ class Model(nn.Module):
         # ! BUG: x cannot be set as parameter
         self.qs_graph_torch = Data(x=nn.parameter.Parameter(nn.init.xavier_uniform_(torch.empty(len(self.qs_graph), input_dim, dtype=torch.float32))), 
                                   edge_index=get_edge_index(self.qs_graph), 
-                                  y=get_node_labels(self.qs_graph))
+                                  y=get_node_labels(self.qs_graph)).to(device)
         
         # self.qs_graph_torch = data(x=torch.nn.init.xavier_uniform_(torch.empty(len(self.qs_graph), input_dim, dtype=torch.float32)), 
         #                     edge_index=get_edge_index(self.qs_graph), 

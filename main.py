@@ -34,7 +34,7 @@ def main():
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir)
+    model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir, device)
     model.to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
