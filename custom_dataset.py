@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 from utils import get_dataframe, get_metadata
 import numpy as np
+import torch
 
 class CustomDataset(Dataset):
     def __init__(self, csv_dir, metadata, seq_len):
@@ -41,7 +42,7 @@ class CustomDataset(Dataset):
         target_answers = out_answers[1:]
         hist_answers = out_answers[:-1]
         
-        return hist_seq, hist_answers, new_seq, target_answers
+        return torch.from_numpy(hist_seq), torch.from_numpy(hist_answers), torch.from_numpy(new_seq), torch.from_numpy(target_answers)
     
 # dataset = CustomDataset("assist09_train.csv", [123, 167, 17905], 20)
 # data_loader = DataLoader(dataset, batch_size=32, shuffle=True)

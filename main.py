@@ -30,7 +30,13 @@ def main():
     lr = 0.1
     ####    end     ####
     
+    print("cuda availability: {}".format(torch.cuda.is_available()))
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir)
+    model.to(device)
+    
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     
     train_set = CustomDataset(train_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
@@ -54,6 +60,10 @@ def main():
         # train_targets = []
         
         for _, (hist_seq, hist_answers, new_seq, target_answers) in tqdm(enumerate(train_loader)):
+            
+            hist_seq, hist_answers, new_seq, target_answers = \
+                hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)
+            
             # * foward pass
             # pred = model(x)
             # (batch_size, seq_len - 1, 1)
