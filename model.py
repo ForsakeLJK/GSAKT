@@ -138,7 +138,7 @@ class Model(nn.Module):
         
         pred = self.linears[4](ffn)
         
-        return pred
+        return pred.squeeze()
     
     def loss(self, pred, label):
         
