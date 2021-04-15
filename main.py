@@ -1,12 +1,9 @@
 from torch.utils.data.dataloader import DataLoader
 from custom_dataset import CustomDataset
-import numpy as np
-import pandas as pd
-from utils import get_dataframe
-import json
-from torch_geometric.data import Data
 import torch
 from model import Model
+from tqdm import tqdm
+from sklearn import metrics
 
 def main():
     #### parameters ####
@@ -32,46 +29,85 @@ def main():
     lr = 0.1
     ####    end     ####
     
-    """
-    输入 (* batch_size):
-        题目序列与回答序列, 会被分割为:
-            历史题目序列 (数据集中的序列去掉最后一道题)
-            历史回答序列 (数据集中的序列去掉最后一道题)
-            新题序列 (数据集中的序列去掉第一道题)
-            历史题目序列+历史回答序列组成新的输入
-    输出 (* batch_size):
-        对新题的正确率预测序列
-    
-    """
-
-    
-    # TODO: init before training
     model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir)
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     
     train_set = CustomDataset(train_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     
+    test_set = CustomDataset(test_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
+    
+    print("training...")
+    
+    # train_losses = []
+    
     for epoch in range(epoch_num):
-        for batch_idx, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(train_loader):
-            # TODO: foward pass
+        
+        print("epoch {} start".format(epoch + 1))
+        
+        model.train()
+        
+        train_preds = []
+        train_targets = []
+        
+        for _, (hist_seq, hist_answers, new_seq, target_answers) in tqdm(enumerate(train_loader)):
+            # * foward pass
             # pred = model(x)
             # (batch_size, seq_len - 1, 1)
             pred = model(hist_seq, hist_answers, new_seq)
             
+            train_preds.append(pred)
+            train_targets.append(target_answers)
+            
             # (batch_size, seq_len - 1, 1) -> (batch_size, seq_len)
-            pred = pred.squeeze()
+            # pred = pred.squeeze()
     
-            # TODO: compute loss
+            # * compute loss
             loss = model.loss(pred, target_answers)
+            
+            # train_losses.append(loss.item())
     
-            # TODO: backward pass & update
+            # * backward pass & update
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+        
+        train_targets = torch.cat(train_targets)
+        train_preds = torch.cat(train_preds).sigmoid()
+        
+        # train_auc = metrics.roc_auc_score(train_targets, train_preds)
+        
+        model.eval()
+        
+        # TODO: split validation set
+        valid_auc = evaluate(model, train_loader)
+        test_auc = evaluate(model, test_loader)
+        
+        print("epoch {}: train_auc: {}, valid_auc: {}, test_auc: {}".format(epoch+1, -1, valid_auc, test_auc))
+                
     
     return 
+
+def evaluate(model, dataloader):
+    preds = []
+    targets = []
+    
+    # with torch.no_grad():
+    for _, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(dataloader):
+        with torch.no_grad():
+            pred = model(hist_seq, hist_answers, new_seq)
+        
+        targets.append(target_answers)
+        preds.append(pred)
+    
+    targets = torch.cat(targets)
+    preds = torch.cat(preds).sigmoid()
+    
+    score = metrics.roc_auc_score(targets, preds)    
+    
+    
+    return score
 
 if __name__ == '__main__':
     main()
