@@ -96,13 +96,14 @@ def main():
         model.eval()
         
         # TODO: split validation set
-        valid_auc = evaluate(model, train_loader, device)
+        # valid_auc = evaluate(model, train_loader, device)
         test_auc = evaluate(model, test_loader, device)
         
-        print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
+        # print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
+        print("epoch {}: train_loss: {}, test_auc: {}".format(epoch+1, epoch_loss, test_auc))
         
         plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
-        plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
+        # plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
         plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
         
                 
