@@ -1,3 +1,16 @@
+# Custom
+
+data/
+
+assist09_*
+ednet_*
+
+test.py
+
+figures/
+
+log/
+
 # General
 .DS_Store
 .AppleDouble
@@ -166,13 +179,17 @@ cython_debug/
 
 .vscode/
 
-data/
+*~
 
-assist09_*
-ednet_*
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
 
-test.py
+# KDE directory preferences
+.directory
 
-figures/
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
 
-log/
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
