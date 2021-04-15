@@ -6,6 +6,7 @@ from tqdm import tqdm
 from sklearn import metrics
 import numpy as np
 from utils import VisdomLinePlotter
+import wandb
 
 def main():
     #### parameters ####
@@ -27,9 +28,19 @@ def main():
     head_num = 5
     batch_size = 32
     seq_len = 21
-    epoch_num = 100
+    epoch_num = 300
     lr = 0.1
     ####    end     ####
+    
+    wandb.init(entity="fmlab-its", project="KT")
+    
+    config = wandb.config
+    config.node_feature_size = node_feature_size
+    config.hidden_dim = hidden_dim
+    config.head_num = head_num
+    config.batch_size = batch_size
+    config.seq_len = seq_len
+    config.lr = lr
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     
@@ -37,6 +48,8 @@ def main():
     
     model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir, device)
     model.to(device)
+    
+    wandb.watch(model)
     
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     
@@ -102,9 +115,11 @@ def main():
         # print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
         print("epoch {}: train_loss: {}, test_auc: {}".format(epoch+1, epoch_loss, test_auc))
         
-        plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
+        wandb.log({"train_loss": epoch_loss, "test_auc": test_auc})
+        
+        # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
         # plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
-        plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
+        # plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
         
                 
     
@@ -134,7 +149,8 @@ def evaluate(model, dataloader, device):
     return score
 
 if __name__ == '__main__':
-    global plotter
-    plotter = VisdomLinePlotter(env_name='G-SAKT Plots')
+    # global plotter
+    # plotter = VisdomLinePlotter(env_name='G-SAKT Plots')
+    
     main()
     
