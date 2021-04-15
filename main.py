@@ -5,6 +5,7 @@ from model import Model
 from tqdm import tqdm
 from sklearn import metrics
 import numpy as np
+from utils import VisdomLinePlotter
 
 def main():
     #### parameters ####
@@ -99,6 +100,11 @@ def main():
         test_auc = evaluate(model, test_loader, device)
         
         print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
+        
+        plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
+        plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
+        plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
+        
                 
     
     return 
@@ -127,5 +133,7 @@ def evaluate(model, dataloader, device):
     return score
 
 if __name__ == '__main__':
+    global plotter
+    plotter = VisdomLinePlotter(env_name='G-SAKT Plots')
     main()
     
