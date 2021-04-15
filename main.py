@@ -7,10 +7,10 @@ from sklearn import metrics
 
 def main():
     #### parameters ####
-    train_dir = "assist09_train.csv"
-    test_dir = "assist09_test.csv"
-    skill_matrix_dir = "assist09_skill_matrix.txt"
-    qs_graph_dir = "assist09_qs_graph.json"
+    train_dir = "data/assist09/assist09_train.csv"
+    test_dir = "data/assist09/assist09_test.csv"
+    skill_matrix_dir = "data/assist09/assist09_skill_matrix.txt"
+    qs_graph_dir = "data/assist09/assist09_qs_graph.json"
     # get skill cnt
     # skill idx -> 0 ~ skill_cnt - 1 
     # question idx -> skill_cnt ~ max_idx - 2
