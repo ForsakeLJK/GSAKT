@@ -63,6 +63,8 @@ def main():
     
     train_losses = []
     
+    best_test_auc = 0.0
+    
     for epoch in range(epoch_num):
         
         print("epoch {} start".format(epoch + 1))
@@ -117,11 +119,16 @@ def main():
         
         wandb.log({"train_loss": epoch_loss, "test_auc": test_auc})
         
+        if test_auc > best_test_auc:
+            best_test_auc = test_auc
+            torch.save(model.state_dict(), "saved/save.pt")
+        
         # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
         # plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
         # plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
         
-                
+    wandb.log({"best_auc": best_test_auc})
+    print("best_auc: {}".format(best_test_auc))
     
     return 
 
