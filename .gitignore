@@ -1,5 +1,6 @@
 # Custom
-wandb/
+wandb
+saved/
 
 .bashrc
 .zshrc
