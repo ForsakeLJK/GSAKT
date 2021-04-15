@@ -4,6 +4,7 @@ import torch
 from model import Model
 from tqdm import tqdm
 from sklearn import metrics
+import numpy as np
 
 def main():
     #### parameters ####
@@ -40,7 +41,7 @@ def main():
     
     print("training...")
     
-    # train_losses = []
+    train_losses = []
     
     for epoch in range(epoch_num):
         
@@ -48,8 +49,9 @@ def main():
         
         model.train()
         
-        train_preds = []
-        train_targets = []
+        
+        # train_preds = []
+        # train_targets = []
         
         for _, (hist_seq, hist_answers, new_seq, target_answers) in tqdm(enumerate(train_loader)):
             # * foward pass
@@ -57,8 +59,8 @@ def main():
             # (batch_size, seq_len - 1, 1)
             pred = model(hist_seq, hist_answers, new_seq)
             
-            train_preds.append(pred)
-            train_targets.append(target_answers)
+            # train_preds.append(pred)
+            # train_targets.append(target_answers)
             
             # (batch_size, seq_len - 1, 1) -> (batch_size, seq_len)
             # pred = pred.squeeze()
@@ -66,15 +68,17 @@ def main():
             # * compute loss
             loss = model.loss(pred, target_answers)
             
-            # train_losses.append(loss.item())
+            train_losses.append(loss.item())
     
             # * backward pass & update
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+        epoch_loss = np.sum(train_losses) / len(train_losses)
         
-        train_targets = torch.cat(train_targets)
-        train_preds = torch.cat(train_preds).sigmoid()
+        # train_targets = torch.cat(train_targets)
+        # train_preds = torch.cat(train_preds).sigmoid()
         
         # train_auc = metrics.roc_auc_score(train_targets, train_preds)
         
@@ -84,7 +88,7 @@ def main():
         valid_auc = evaluate(model, train_loader)
         test_auc = evaluate(model, test_loader)
         
-        print("epoch {}: train_auc: {}, valid_auc: {}, test_auc: {}".format(epoch+1, -1, valid_auc, test_auc))
+        print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
                 
     
     return 
