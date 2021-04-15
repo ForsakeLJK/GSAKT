@@ -1,4 +1,6 @@
 # Custom
+wandb/
+
 .bashrc
 .zshrc
 nohup.out
