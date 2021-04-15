@@ -24,13 +24,8 @@ class Model(nn.Module):
         super(Model, self).__init__()
         
         self.gcn_layer_num = 3
-        # TODO: 
-        # * dropout for GCN linear layer
         self.dropout = [0.3, 0.2, 0.2]
-        # * dropout for MHA
-        
-        
-        
+
         with open(qs_graph_dir, "r") as src:
             self.qs_graph = json.load(src)
         
@@ -118,8 +113,7 @@ class Model(nn.Module):
         
         # (batch_size, seq_len - 1, hidden_dim * 2) -> (batch_size, seq_len - 1, hidden_dim)
         interaction_embed = self.linears[0](torch.cat([hist_seq_embed, hist_answers_embed], dim=2))
-        
-        # TODO: position embedding
+
         # (seq_len - 1, hidden_dim)
         pos_embed = self.pos_embedding(torch.arange(self.seq_len - 1).unsqueeze(0))
         

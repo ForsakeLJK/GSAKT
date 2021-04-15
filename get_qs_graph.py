@@ -22,7 +22,7 @@ print("single skill: 0 ~ {}, multi-skill: {} ~ {}, question: {} ~ {}, correctnes
 # graph -> list of dict
 # node: {"type": "skill" or "question", "neighbor": [indices]}  
 qs_graph = []
-# TODO: is it feasible to get rid of multi-skills?
+# ?: is it feasible to get rid of multi-skills?
 # init graph 
 node_cnt = single_skill_cnt + max_idx - 2 - skill_cnt + 1
 for i in range(node_cnt):
