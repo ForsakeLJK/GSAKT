@@ -95,30 +95,33 @@ def main():
         model.eval()
         
         # TODO: split validation set
-        valid_auc = evaluate(model, train_loader)
-        test_auc = evaluate(model, test_loader)
+        valid_auc = evaluate(model, train_loader, device)
+        test_auc = evaluate(model, test_loader, device)
         
         print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
                 
     
     return 
 
-def evaluate(model, dataloader):
+def evaluate(model, dataloader, device):
     preds = []
     targets = []
     
     # with torch.no_grad():
     for _, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(dataloader):
+        hist_seq, hist_answers, new_seq, target_answers = \
+            hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)        
+        
         with torch.no_grad():
             pred = model(hist_seq, hist_answers, new_seq)
         
         targets.append(target_answers)
         preds.append(pred)
     
-    targets = torch.cat(targets)
-    preds = torch.cat(preds).sigmoid()
+    targets = torch.cat(targets).to(device)
+    preds = torch.cat(preds).sigmoid().to(device)
     
-    score = metrics.roc_auc_score(targets, preds)    
+    score = metrics.roc_auc_score(targets.cpu(), preds.cpu())    
     
     
     return score

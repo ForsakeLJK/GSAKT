@@ -117,7 +117,7 @@ class Model(nn.Module):
         interaction_embed = self.linears[0](torch.cat([hist_seq_embed, hist_answers_embed], dim=2))
 
         # (seq_len - 1, hidden_dim)
-        pos_embed = self.pos_embedding(torch.arange(self.seq_len - 1).unsqueeze(0))
+        pos_embed = self.pos_embedding(torch.arange(self.seq_len - 1).unsqueeze(0).to(self.device))
         
         interaction_embed = pos_embed + interaction_embed
         
@@ -125,7 +125,7 @@ class Model(nn.Module):
         key = self.linears[2](interaction_embed).permute(1,0,2)
         query = self.linears[3](new_seq_embed).permute(1,0,2)
         
-        atn, _ = self.MHA(query, key, value, attn_mask=torch.from_numpy(np.triu(np.ones((self.seq_len-1, self.seq_len-1)), k=1).astype('bool')))
+        atn, _ = self.MHA(query, key, value, attn_mask=torch.from_numpy(np.triu(np.ones((self.seq_len-1, self.seq_len-1)), k=1).astype('bool')).to(self.device))
         
         atn = self.lns[2](atn + query).permute(1,0,2)
         
