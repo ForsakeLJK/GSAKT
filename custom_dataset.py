@@ -2,11 +2,12 @@ from torch.utils.data import Dataset, DataLoader
 from utils import get_dataframe, get_metadata
 import numpy as np
 import torch
+import pandas as pd
 
 class CustomDataset(Dataset):
     def __init__(self, csv_dir, metadata, seq_len):
         super(CustomDataset, self).__init__()
-        self.df = get_dataframe(csv_dir)
+        self.df = slice_discard_seq(get_dataframe(csv_dir), seq_len)
         self.seq_len = seq_len
         # single skill cnt, skill cnt, max_idx
         self.metadata = metadata
@@ -44,6 +45,35 @@ class CustomDataset(Dataset):
         
         return torch.from_numpy(hist_seq), torch.from_numpy(hist_answers), torch.from_numpy(new_seq), torch.from_numpy(target_answers)
     
+def slice_discard_seq( df : pd.DataFrame, seq_len):
+    # discard seq that smaller than 3
+    df = df[df["seq_len"] >= 3]
+    
+    # slice seq that larger than seq_len & stack them on df
+    sliced_df = pd.DataFrame(columns=["seq_len", "skill", "question", "correctness"])
+    loc = 0
+    
+    long_df = df[df["seq_len"] > seq_len]
+    
+    for row in long_df.itertuples(index=False):
+        slice_num = row[0] // seq_len
+        for i in range(slice_num):
+            # i * seq_len -> (i+1) * seq_len - 1
+            sliced_df.loc[loc] = [seq_len, row[1][i * seq_len : ((i+1) * seq_len - 1)], \
+                row[2][i * seq_len : ((i+1) * seq_len - 1)], row[3][i * seq_len : ((i+1) * seq_len - 1)]]
+             
+            loc += 1
+            
+    assert loc == len(sliced_df), "loc error in slice_df"
+    
+    # discard old uncliced long seq
+    df = df[df["seq_len"] <= seq_len]
+    
+    # append new df
+    df = df.append(sliced_df, ignore_index=True)
+    
+    return df
+
 # dataset = CustomDataset("assist09_train.csv", [123, 167, 17905], 20)
 # data_loader = DataLoader(dataset, batch_size=32, shuffle=True)
 
@@ -53,3 +83,10 @@ class CustomDataset(Dataset):
         # print("{}, {}, {}".format(hist_seq, new_seq, target_answers))
 
 # for batch_index, (hist_seq, new_seq, target_answers) in enumerate(train_loader):
+
+# df = get_dataframe("data/assist09/assist09_train.csv")
+# print("{} | {} | {} | ".format(len(df), len(df[df["seq_len"] == 20]), len(df[df["seq_len"] > 20]), len(df[df["seq_len"] < 3])))
+# df = slice_discard_seq(df, 20)
+# print("{} | {} | {} | ".format(len(df), len(df[df["seq_len"] == 20]), len(df[df["seq_len"] > 20]), len(df[df["seq_len"] < 3])))
+# print(df[df["seq_len"] == 20].tail(5))
+# print(type(df["question"][0])) # numpy.ndarray
