@@ -122,6 +122,7 @@ def main():
         if test_auc > best_test_auc:
             best_test_auc = test_auc
             torch.save(model.state_dict(), "saved/save.pt")
+            print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
         
         # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
         # plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
