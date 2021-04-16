@@ -128,7 +128,7 @@ def main():
             # pred = pred.squeeze()
     
             # * compute loss
-            loss = model.loss(pred, target_answers)
+            loss = model.loss(pred, target_answers.float())
             
             train_losses.append(loss.item())
     
