@@ -63,7 +63,7 @@ class Model(nn.Module):
         
         self.convs = nn.ModuleList()
         # self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
-        self.convs.append(pyg_nn.GCNConv(input_dim, hidden_dim))
+        self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
         self.lns = nn.ModuleList()
         self.lns.append(nn.LayerNorm(hidden_dim))
         self.lns.append(nn.LayerNorm(hidden_dim))
@@ -73,10 +73,10 @@ class Model(nn.Module):
         
         for i in range(self.gcn_layer_num - 1):
             if i == self.gcn_layer_num - 2:
-                self.convs.append(pyg_nn.GCNConv(hidden_dim, output_dim))
+                self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=3))
             else:
                 # self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
-                self.convs.append(pyg_nn.GCNConv(hidden_dim, hidden_dim))
+                self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
         
         self.pos_embedding = nn.Embedding(seq_len - 1, output_dim)
         
