@@ -60,7 +60,8 @@ def main():
     epoch_num = args.epoch_num
     lr = args.lr
     
-    save_dir = "saved/" + args.save_num + ".pt"
+    save_dir_best = "saved/" + args.save_num + "_best.pt"
+    save_dir_final =  "saved/" + args.save_num + "_final.pt"
     dropout = args.dropout
     gcn_layer_num = args.gcn_layer_num
     
@@ -77,6 +78,8 @@ def main():
     config.lr = lr
     config.dropout = dropout
     config.gcn_layer_num = gcn_layer_num
+    
+    config.save_num = args.save_num
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     
@@ -157,7 +160,7 @@ def main():
         
         if test_auc > best_test_auc:
             best_test_auc = test_auc
-            torch.save(model.state_dict(), save_dir)
+            torch.save(model.state_dict(), save_dir_best)
             print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
         
         # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
@@ -166,6 +169,7 @@ def main():
         
     wandb.log({"best_auc": best_test_auc})
     print("best_auc: {}".format(best_test_auc))
+    torch.save(model.state_dict(), save_dir_final)
     
     return 
 
