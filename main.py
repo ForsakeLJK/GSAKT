@@ -70,6 +70,7 @@ def main():
     wandb.init(entity="fmlab-its", project="KT")
     
     config = wandb.config
+    config.dataset = args.dataset
     config.node_feature_size = node_feature_size
     config.hidden_dim = hidden_dim
     config.head_num = head_num
