@@ -7,30 +7,64 @@ from sklearn import metrics
 import numpy as np
 from utils import VisdomLinePlotter
 import wandb
+import argparse
 
 def main():
-    #### parameters ####
-    train_dir = "data/assist09/assist09_train.csv"
-    test_dir = "data/assist09/assist09_test.csv"
-    skill_matrix_dir = "data/assist09/assist09_skill_matrix.txt"
-    qs_graph_dir = "data/assist09/assist09_qs_graph.json"
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("--dataset", type=str, default="assist09")
+    arg_parser.add_argument("--head_num", type=int, default=5)
+    arg_parser.add_argument("--batch_size", type=int, default=32)
+    arg_parser.add_argument("--seq_len", type=int, default=21)
+    arg_parser.add_argument("--epoch_num", type=int, default=100)
+    arg_parser.add_argument("--lr", type=float, default=0.01)
+    arg_parser.add_argument("--node_feature_size", type=int, default=100)
+    arg_parser.add_argument("--hidden_dim", type=int, default=100)
+    arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
+    arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
+    arg_parser.add_argument("--save_num", type=str, required=True)
+    
+    args = arg_parser.parse_args()
+    
+    
+    #* #### parameters ####
+    if args.dataset not in ["assist09", "ednet"]:
+        raise ValueError("dataset <{}> not supported".format(args.dataset))
+    
+    train_dir = "data/" + args.dataset + "/" + args.dataset + "_train.csv"
+    test_dir = "data/" + args.dataset + "/" + args.dataset + "_test.csv"
+    skill_matrix_dir = "data/" + args.dataset + "/" + args.dataset + "_skill_matrix.csv"
+    qs_graph_dir = "data/" + args.dataset + "/" + args.dataset + "_qs_graph.json"
     # get skill cnt
     # skill idx -> 0 ~ skill_cnt - 1 
     # question idx -> skill_cnt ~ max_idx - 2
     # correctness idx -> max_idx - 1, max_idx 
     # please refer to utils.get_metadata to see how to get them
-    node_feature_size = 100
-    hidden_dim = 100
-    single_skill_cnt = 123
-    skill_cnt = 167
-    max_idx = 17905
+    node_feature_size = args.node_feature_size
+    hidden_dim = args.hidden_dim
+    
+    if args.dataset == "assist09":
+        single_skill_cnt = 123
+        skill_cnt = 167
+        max_idx = 17905
+    else:
+        raise ValueError("metadata not defined")
+    
     # ! (seq_len - 1) must be divisible by head_num
-    head_num = 5
-    batch_size = 32
-    seq_len = 21
-    epoch_num = 300
-    lr = 0.1
-    ####    end     ####
+    head_num = args.head_num
+    batch_size = args.batch_size
+    seq_len = args.seq_len
+    
+    if not (seq_len - 1) % head_num == 0:
+        raise ValueError("seq_len - 1 <{}> is not divisible by head_num <{}>".format(seq_len - 1, head_num))
+    
+    epoch_num = args.epoch_num
+    lr = args.lr
+    
+    save_dir = "saved/" + args.save_num + ".pt"
+    dropout = args.dropout
+    gcn_layer_num = args.gcn_layer_num
+    
+    #* ####    end     ####
     
     wandb.init(entity="fmlab-its", project="KT")
     
@@ -41,6 +75,8 @@ def main():
     config.batch_size = batch_size
     config.seq_len = seq_len
     config.lr = lr
+    config.dropout = dropout
+    config.gcn_layer_num = gcn_layer_num
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     
@@ -121,7 +157,7 @@ def main():
         
         if test_auc > best_test_auc:
             best_test_auc = test_auc
-            torch.save(model.state_dict(), "saved/save.pt")
+            torch.save(model.state_dict(), save_dir)
             print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
         
         # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)

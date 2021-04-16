@@ -10,7 +10,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3):
         """[summary]
 
         Args:
@@ -25,8 +25,8 @@ class Model(nn.Module):
         
         self.device = device
         
-        self.gcn_layer_num = 3
-        self.dropout = [0.3, 0.2, 0.2]
+        self.gcn_layer_num = gcn_layer_num
+        self.dropout = dropout
 
         with open(qs_graph_dir, "r") as src:
             self.qs_graph = json.load(src)
