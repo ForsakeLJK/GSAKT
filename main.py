@@ -107,7 +107,7 @@ def main():
     
     best_test_auc = 0.0
     
-    for epoch in range(epoch_num):
+    for epoch in tqdm(range(epoch_num)):
         
         print("epoch {} start".format(epoch + 1))
         
