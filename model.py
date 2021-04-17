@@ -35,10 +35,10 @@ class Model(nn.Module):
         self.seq_len = seq_len
         
         # ! these embedding will all be trained in an end-to-end manner
-        self.correctness_embedding = nn.parameter.Parameter(torch.nn.init.xavier_uniform_(torch.empty(2, input_dim, dtype=torch.float32)))
+        self.correctness_embedding = torch.nn.init.xavier_uniform_(torch.empty(2, input_dim, dtype=torch.float32))
         
         # ! BUG: x cannot be set as parameter
-        self.qs_graph_torch = Data(x=nn.parameter.Parameter(nn.init.xavier_uniform_(torch.empty(len(self.qs_graph), input_dim, dtype=torch.float32))), 
+        self.qs_graph_torch = Data(x=nn.init.xavier_uniform_(torch.empty(len(self.qs_graph), input_dim, dtype=torch.float32)), 
                                   edge_index=get_edge_index(self.qs_graph), 
                                   y=get_node_labels(self.qs_graph)).to(device)
         
