@@ -163,10 +163,6 @@ def main():
             torch.save(model.state_dict(), save_dir_best)
             print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
         
-        # plotter.plot('loss', 'train', 'train loss', epoch+1, epoch_loss)
-        # plotter.plot('auc', 'val', 'AUC', epoch+1, valid_auc)
-        # plotter.plot('auc', 'test', 'AUC', epoch+1, test_auc)
-        
     wandb.log({"best_auc": best_test_auc})
     print("best_auc: {}".format(best_test_auc))
     torch.save(model.state_dict(), save_dir_final)
@@ -199,8 +195,6 @@ def evaluate(model, dataloader, device):
     return score
 
 if __name__ == '__main__':
-    # global plotter
-    # plotter = VisdomLinePlotter(env_name='G-SAKT Plots')
     
     main()
     
