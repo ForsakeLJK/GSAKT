@@ -22,7 +22,7 @@ args = arg_parser.parse_args()
 
 test_cnt = args.test_cnt
 
-test_dir = "data/" + args.dataset + "/" + args.dataset + "_train.csv"
+test_dir = "data/" + args.dataset + "/" + args.dataset + "_test.csv"
 
 model_dir = args.model_dir
 
