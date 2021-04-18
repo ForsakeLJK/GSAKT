@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import json
 from matplotlib import pyplot as plt
+import torch
+from sklearn import metrics
 
 def get_dataframe(data_dir):
     """Convert Dataset into Dataframe
@@ -46,6 +48,29 @@ def get_metadata(skill_matrix, df_total):
     max_idx =  np.max([np.max(i) for _, i in enumerate(df_total["correctness"])])
     
     return single_skill_cnt, skill_cnt, max_idx
+
+def evaluate(model, dataloader, device):
+    preds = []
+    targets = []
+    
+    # with torch.no_grad():
+    for _, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(dataloader):
+        hist_seq, hist_answers, new_seq, target_answers = \
+            hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)        
+        
+        with torch.no_grad():
+            pred = model(hist_seq, hist_answers, new_seq)
+        
+        targets.append(target_answers)
+        preds.append(pred)
+    
+    targets = torch.cat(targets).to(device)
+    preds = torch.cat(preds).sigmoid().to(device)
+    
+    score = metrics.roc_auc_score(targets.cpu(), preds.cpu())    
+    
+    
+    return score
                 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, o):

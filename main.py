@@ -1,3 +1,4 @@
+from utils import evaluate
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import random_split
 from custom_dataset import CustomDataset
@@ -182,29 +183,6 @@ def main():
     print("done.")
     
     return 
-
-def evaluate(model, dataloader, device):
-    preds = []
-    targets = []
-    
-    # with torch.no_grad():
-    for _, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(dataloader):
-        hist_seq, hist_answers, new_seq, target_answers = \
-            hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)        
-        
-        with torch.no_grad():
-            pred = model(hist_seq, hist_answers, new_seq)
-        
-        targets.append(target_answers)
-        preds.append(pred)
-    
-    targets = torch.cat(targets).to(device)
-    preds = torch.cat(preds).sigmoid().to(device)
-    
-    score = metrics.roc_auc_score(targets.cpu(), preds.cpu())    
-    
-    
-    return score
 
 if __name__ == '__main__':
     
