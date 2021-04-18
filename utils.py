@@ -54,18 +54,18 @@ def evaluate(model, dataloader, device):
     targets = []
     
     # with torch.no_grad():
-    for _, (hist_seq, hist_answers, new_seq, target_answers) in enumerate(dataloader):
+    for _, (hist_seq, hist_answers, new_seq, target_answers, target_answer_len) in enumerate(dataloader):
         hist_seq, hist_answers, new_seq, target_answers = \
             hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)        
         
         with torch.no_grad():
             pred = model(hist_seq, hist_answers, new_seq)
         
-        targets.append(target_answers)
-        preds.append(pred)
+        targets.extend(torch.flatten(target_answers))
+        preds.extend(torch.flatten(pred))
     
-    targets = torch.cat(targets).to(device)
-    preds = torch.cat(preds).sigmoid().to(device)
+    targets = torch.stack(targets, -1).to(device)
+    preds = torch.stack(preds, -1).sigmoid().to(device)
     
     score = metrics.roc_auc_score(targets.cpu(), preds.cpu())    
     
