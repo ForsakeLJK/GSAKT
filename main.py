@@ -5,7 +5,6 @@ from model import Model
 from tqdm import tqdm
 from sklearn import metrics
 import numpy as np
-from utils import VisdomLinePlotter
 import wandb
 import argparse
 
@@ -152,8 +151,6 @@ def main():
         
         model.eval()
         
-        # TODO: split validation set
-        # valid_auc = evaluate(model, train_loader, device)
         test_auc = evaluate(model, test_loader, device)
         
         # print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
