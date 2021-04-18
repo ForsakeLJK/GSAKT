@@ -103,21 +103,23 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     
     train_set = CustomDataset(train_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
-    train_set, val_set = random_split(train_set, [0.7 * len(train_set), 0.3 * len(train_set)])
+    # train_set, val_set = random_split(train_set, [0.7 * len(train_set), 0.3 * len(train_set)])
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+    # val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
     
     test_set = CustomDataset(test_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
+    val_loader = test_loader
     
     print("train samples: {}, val samples: {}, test samples: {}"\
-        .format(len(train_set), len(val_set), len(test_set)))
+        .format(len(train_set), len(test_set)))
     
     print("start...")
     
     train_losses = []
     
     best_val_auc = 0.0
+    best_test_auc = 0.0
     
     for epoch in tqdm(range(epoch_num)):
         
@@ -169,7 +171,7 @@ def main():
         # print("epoch {}: train_loss: {}, valid_auc: {}, val_auc: {}".format(epoch+1, epoch_loss, valid_auc, val_auc))
         print("epoch {}: train_loss: {}, val_auc: {}".format(epoch+1, epoch_loss, val_auc))
         
-        wandb.log({"train_loss": epoch_loss, "val_auc": val_auc})
+        wandb.log({"train_loss": epoch_loss, "test_auc": val_auc})
         
         if val_auc > best_val_auc:
             best_val_auc = val_auc
