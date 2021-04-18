@@ -45,6 +45,14 @@ def main():
         single_skill_cnt = 123
         skill_cnt = 167
         max_idx = 17905
+    elif args.dataset == "assist12":
+        single_skill_cnt = 265
+        skill_cnt = 265
+        max_idx = 53331
+    elif args.dataset == "ednet":
+        single_skill_cnt = 189
+        skill_cnt = 1886
+        max_idx = 14037
     else:
         raise ValueError("metadata not defined")
     
