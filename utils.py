@@ -61,8 +61,10 @@ def evaluate(model, dataloader, device):
         with torch.no_grad():
             pred = model(hist_seq, hist_answers, new_seq)
         
-        targets.extend(torch.flatten(target_answers))
-        preds.extend(torch.flatten(pred))
+        
+        for i in range(pred.shape[0]):
+            targets.extend(target_answers[i][0:target_answer_len[i]])
+            preds.extend(pred[i][0:target_answer_len[i]])
     
     targets = torch.stack(targets, -1).to(device)
     preds = torch.stack(preds, -1).sigmoid().to(device)

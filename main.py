@@ -110,8 +110,8 @@ def main():
     test_set = CustomDataset(test_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
     
-    print("train samples: {}, val samples: {}, test samples: {}"\
-        .format(len(train_set), len(test_set)))
+    # print("train samples: {}, val samples: {}, test samples: {}"\
+    #     .format(len(train_set), len(test_set)))
     
     print("start...")
     
