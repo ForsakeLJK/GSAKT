@@ -129,7 +129,7 @@ def main():
         # train_preds = []
         # train_targets = []
         
-        for _, (hist_seq, hist_answers, new_seq, target_answers) in tqdm(enumerate(train_loader)):
+        for _, (hist_seq, hist_answers, new_seq, target_answers, _) in tqdm(enumerate(train_loader)):
             
             hist_seq, hist_answers, new_seq, target_answers = \
                 hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)

@@ -24,7 +24,7 @@ class CustomDataset(Dataset):
         seq = np.subtract(self.df["question"][index], shift_num) 
         # get 0 and 1
         answers = np.subtract(self.df["correctness"][index], self.metadata[2] - 1) 
-        
+        target_answer_len = self.df["seq_len"][index] - 1
         # truncate or pad sequence
         # ? pad 0 or 1?
         out_seq = np.zeros(self.seq_len)
@@ -43,7 +43,9 @@ class CustomDataset(Dataset):
         target_answers = out_answers[1:]
         hist_answers = out_answers[:-1]
         
-        return torch.from_numpy(hist_seq), torch.from_numpy(hist_answers), torch.from_numpy(new_seq), torch.from_numpy(target_answers)
+        return torch.from_numpy(hist_seq), torch.from_numpy(hist_answers), \
+            torch.from_numpy(new_seq), torch.from_numpy(target_answers), \
+            torch.tensor(target_answer_len)
     
 def slice_discard_seq( df : pd.DataFrame, seq_len):
     # discard seq that smaller than 3
