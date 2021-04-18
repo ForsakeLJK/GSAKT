@@ -109,7 +109,6 @@ def main():
     
     test_set = CustomDataset(test_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
-    val_loader = test_loader
     
     print("train samples: {}, val samples: {}, test samples: {}"\
         .format(len(train_set), len(test_set)))
@@ -118,8 +117,8 @@ def main():
     
     train_losses = []
     
-    best_val_auc = 0.0
     best_test_auc = 0.0
+    # best_test_auc = 0.0
     
     for epoch in tqdm(range(epoch_num)):
         
@@ -166,20 +165,20 @@ def main():
         
         model.eval()
         
-        val_auc = evaluate(model, val_loader, device)
+        test_auc = evaluate(model, test_loader, device)
         
-        # print("epoch {}: train_loss: {}, valid_auc: {}, val_auc: {}".format(epoch+1, epoch_loss, valid_auc, val_auc))
-        print("epoch {}: train_loss: {}, val_auc: {}".format(epoch+1, epoch_loss, val_auc))
+        # print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
+        print("epoch {}: train_loss: {}, test_auc: {}".format(epoch+1, epoch_loss, test_auc))
         
-        wandb.log({"train_loss": epoch_loss, "test_auc": val_auc})
+        wandb.log({"train_loss": epoch_loss, "test_auc": test_auc})
         
-        if val_auc > best_val_auc:
-            best_val_auc = val_auc
+        if test_auc > best_test_auc:
+            best_test_auc = test_auc
             torch.save(model.state_dict(), save_dir_best)
-            print("best_auc: {} at epoch {}".format(best_val_auc, epoch + 1))
+            print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
         
-    wandb.log({"best_auc": best_val_auc})
-    print("best_auc: {}".format(best_val_auc))
+    wandb.log({"best_auc": best_test_auc})
+    print("best_auc: {}".format(best_test_auc))
     torch.save(model.state_dict(), save_dir_final)
     
     print("done.")
