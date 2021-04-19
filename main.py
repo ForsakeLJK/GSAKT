@@ -3,6 +3,7 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import random_split
 from custom_dataset import CustomDataset
 import torch
+from torch.optim import lr_scheduler
 from model import Model
 from tqdm import tqdm
 from sklearn import metrics
@@ -23,6 +24,7 @@ def main():
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
     arg_parser.add_argument("--save_num", type=str, required=True)
+    arg_parser.add_argument("--lr_decay", type=float, default=None)
     
     args = arg_parser.parse_args()
     
@@ -74,6 +76,13 @@ def main():
     dropout = args.dropout
     gcn_layer_num = args.gcn_layer_num
     
+    lr_decay = args.lr_decay
+    
+    if lr_decay is not None:
+        print("lr_decay: True, {}".format(lr_decay))
+    else:
+        print("lr_decay: False")
+    
     #* ####    end     ####
     
     wandb.init(entity="fmlab-its", project="KT")
@@ -101,6 +110,8 @@ def main():
     wandb.watch(model)
     
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    if lr_decay is not None:
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=40, gamma=lr_decay)
     
     train_set = CustomDataset(train_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     # train_set, val_set = random_split(train_set, [0.7 * len(train_set), 0.3 * len(train_set)])
@@ -176,6 +187,9 @@ def main():
             best_test_auc = test_auc
             torch.save(model.state_dict(), save_dir_best)
             print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
+        
+        if lr_decay is not None:
+            scheduler.step()
         
     wandb.log({"best_auc": best_test_auc})
     print("best_auc: {}".format(best_test_auc))
