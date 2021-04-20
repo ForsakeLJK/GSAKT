@@ -87,13 +87,15 @@ class Model(nn.Module):
             hist_answers ([type]): (batch_size, seq_len - 1)
             new_seq ([type]): (batch_size, seq_len - 1)
         """
-        qs_graph_torch = Data(x= self.node_embedding_layer(torch.arange(len(self.qs_graph)).unsqueeze(0).to(self.device)), 
+        x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
+        
+        qs_graph_torch = Data(x= x, 
                     edge_index=get_edge_index(self.qs_graph), 
                     y=get_node_labels(self.qs_graph)).to(self.device)
         
         x, edge_index = qs_graph_torch.x, qs_graph_torch.edge_index
         
-        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).unsqueeze(0).to(self.device))
+        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
         
         for i in range(self.gcn_layer_num):
             x = self.convs[i](x, edge_index)
@@ -113,7 +115,7 @@ class Model(nn.Module):
         # (batch_size, seq_len - 1, hidden_dim * 2) -> (batch_size, seq_len - 1, hidden_dim)
         interaction_embed = self.linears[0](torch.cat([hist_seq_embed, hist_answers_embed], dim=2))
 
-        # (seq_len - 1, hidden_dim)
+        # (1, seq_len - 1, hidden_dim)
         pos_embed = self.pos_embedding(torch.arange(self.seq_len - 1).unsqueeze(0).to(self.device))
         
         interaction_embed = pos_embed + interaction_embed
