@@ -20,13 +20,14 @@ def main():
     arg_parser.add_argument("--seq_len", type=int, default=21)
     arg_parser.add_argument("--epoch_num", type=int, default=100)
     arg_parser.add_argument("--lr", type=float, default=0.01)
-    arg_parser.add_argument("--node_feature_size", type=int, default=None)
+    arg_parser.add_argument("--node_feature_size", type=int, default=100)
     arg_parser.add_argument("--node_embedding_size", type=int, default=100)
     arg_parser.add_argument("--hidden_dim", type=int, default=200)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
     # arg_parser.add_argument("--save_num", type=str, required=True)
     arg_parser.add_argument("--lr_decay", type=float, default=None)
+    arg_parser.add_argument("--n_hop", type=int, default=3)
     
     args = arg_parser.parse_args()
     
@@ -80,6 +81,7 @@ def main():
     save_dir_final =  "saved/" + model_uuid + "_final.pt"
     dropout = args.dropout
     gcn_layer_num = args.gcn_layer_num
+    n_hop = args.n_hop
     
     lr_decay = args.lr_decay
     
@@ -102,6 +104,7 @@ def main():
     config.lr = lr
     config.dropout = dropout
     config.gcn_layer_num = gcn_layer_num
+    config.n_hop = n_hop
     
     config.save_num = model_uuid
     
@@ -111,7 +114,7 @@ def main():
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device)
+    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, dropout, gcn_layer_num, n_hop)
     model.to(device)
     
     wandb.watch(model)

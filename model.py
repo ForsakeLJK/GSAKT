@@ -10,7 +10,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3):
         """[summary]
 
         Args:
@@ -55,7 +55,13 @@ class Model(nn.Module):
         
         self.convs = nn.ModuleList()
         # self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
-        self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
+        if gcn_layer_num == 1:
+            self.convs.append(pyg_nn.SGConv(input_dim, output_dim, K=n_hop))
+        elif gcn_layer_num > 1:
+            self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=n_hop))
+        else:
+            raise ValueError("Unsupported gcn_layer_num {}")
+        
         self.lns = nn.ModuleList()
         self.lns.append(nn.LayerNorm(hidden_dim))
         self.lns.append(nn.LayerNorm(hidden_dim))
