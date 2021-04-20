@@ -20,7 +20,8 @@ def main():
     arg_parser.add_argument("--seq_len", type=int, default=21)
     arg_parser.add_argument("--epoch_num", type=int, default=100)
     arg_parser.add_argument("--lr", type=float, default=0.01)
-    arg_parser.add_argument("--node_feature_size", type=int, default=100)
+    arg_parser.add_argument("--node_feature_size", type=int, default=None)
+    arg_parser.add_argument("--node_embedding_size", type=int, default=100)
     arg_parser.add_argument("--hidden_dim", type=int, default=200)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
@@ -45,6 +46,7 @@ def main():
     # please refer to utils.get_metadata to see how to get them
     node_feature_size = args.node_feature_size
     hidden_dim = args.hidden_dim
+    node_embedding_size = args.node_embedding_size
     
     if args.dataset == "assist09":
         single_skill_cnt = 123
@@ -103,11 +105,13 @@ def main():
     
     config.save_num = model_uuid
     
+    config.node_embedding_size = node_embedding_size
+    
     print("cuda availability: {}".format(torch.cuda.is_available()))
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir, device)
+    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device)
     model.to(device)
     
     wandb.watch(model)
