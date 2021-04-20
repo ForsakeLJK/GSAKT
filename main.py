@@ -116,7 +116,8 @@ def main():
     
     wandb.watch(model)
     
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    optimizer = torch.optim.SparseAdam(model.parameters(), lr=lr)
     if lr_decay is not None:
         scheduler = lr_scheduler.StepLR(optimizer, step_size=40, gamma=lr_decay)
     
