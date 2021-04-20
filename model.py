@@ -34,16 +34,9 @@ class Model(nn.Module):
         # ! input shape should be (seq_len - 1)        
         self.seq_len = seq_len
         
-        # ! these embedding will all be trained in an end-to-end manner
-        # self.correctness_embedding = torch.nn.init.xavier_uniform_(torch.empty(2, input_dim, dtype=torch.float32))
-        self.correctness_embedding = nn.Embedding(2, input_dim)
-        # self.qs_graph_torch = Data(x=nn.init.xavier_uniform_(torch.empty(len(self.qs_graph), input_dim, dtype=torch.float32)), 
-        #                           edge_index=get_edge_index(self.qs_graph), 
-        #                           y=get_node_labels(self.qs_graph)).to(device)
-        # ! SPARSE 
-        self.qs_graph_torch = Data(x=nn.Embedding(len(self.qs_graph), input_dim, sparse=True), 
-                            edge_index=get_edge_index(self.qs_graph), 
-                            y=get_node_labels(self.qs_graph)).to(device)
+        self.correctness_embedding_layer = nn.Embedding(2, input_dim)
+        
+        self.node_embedding_layer = nn.Embedding(len(self.qs_graph), input_dim)
         
         self.linears = nn.ModuleList()
         self.linears.append(nn.Linear(output_dim*2, output_dim, bias=True))
@@ -94,8 +87,13 @@ class Model(nn.Module):
             hist_answers ([type]): (batch_size, seq_len - 1)
             new_seq ([type]): (batch_size, seq_len - 1)
         """
-        x, edge_index = self.qs_graph_torch.x, self.qs_graph_torch.edge_index
-        correctness_embedding = self.correctness_embedding
+        qs_graph_torch = Data(x= self.node_embedding_layer(torch.arange(len(self.qs_graph)).unsqueeze(0).to(self.device)), 
+                    edge_index=get_edge_index(self.qs_graph), 
+                    y=get_node_labels(self.qs_graph)).to(self.device)
+        
+        x, edge_index = qs_graph_torch.x, qs_graph_torch.edge_index
+        
+        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).unsqueeze(0).to(self.device))
         
         for i in range(self.gcn_layer_num):
             x = self.convs[i](x, edge_index)
