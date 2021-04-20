@@ -10,6 +10,7 @@ from sklearn import metrics
 import numpy as np
 import wandb
 import argparse
+import shortuuid
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -23,7 +24,7 @@ def main():
     arg_parser.add_argument("--hidden_dim", type=int, default=100)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
-    arg_parser.add_argument("--save_num", type=str, required=True)
+    # arg_parser.add_argument("--save_num", type=str, required=True)
     arg_parser.add_argument("--lr_decay", type=float, default=None)
     
     args = arg_parser.parse_args()
@@ -71,8 +72,10 @@ def main():
     epoch_num = args.epoch_num
     lr = args.lr
     
-    save_dir_best = "saved/" + args.save_num + "_best.pt"
-    save_dir_final =  "saved/" + args.save_num + "_final.pt"
+    model_uuid = shortuuid.uuid()
+    
+    save_dir_best = "saved/" + model_uuid + "_best.pt"
+    save_dir_final =  "saved/" + model_uuid + "_final.pt"
     dropout = args.dropout
     gcn_layer_num = args.gcn_layer_num
     
@@ -98,7 +101,7 @@ def main():
     config.dropout = dropout
     config.gcn_layer_num = gcn_layer_num
     
-    config.save_num = args.save_num
+    config.save_num = model_uuid
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     
