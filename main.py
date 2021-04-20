@@ -21,7 +21,7 @@ def main():
     arg_parser.add_argument("--epoch_num", type=int, default=100)
     arg_parser.add_argument("--lr", type=float, default=0.01)
     arg_parser.add_argument("--node_feature_size", type=int, default=100)
-    arg_parser.add_argument("--hidden_dim", type=int, default=100)
+    arg_parser.add_argument("--hidden_dim", type=int, default=200)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
     # arg_parser.add_argument("--save_num", type=str, required=True)
