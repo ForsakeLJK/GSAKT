@@ -11,7 +11,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3, gcn_type='sgconv'):
         """[summary]
 
         Args:
@@ -28,10 +28,9 @@ class Model(nn.Module):
         
         self.gcn_on = gcn_on
         
-        if gcn_on:
+        if gcn_type == 'sgconv' and gcn_on:
             self.gcn_layer_num = gcn_layer_num
             self.convs = nn.ModuleList()
-            # self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
             if gcn_layer_num == 1:
                 self.convs.append(pyg_nn.SGConv(input_dim, output_dim, K=n_hop))
             elif gcn_layer_num > 1:
@@ -43,9 +42,22 @@ class Model(nn.Module):
                 if i == self.gcn_layer_num - 2:
                     self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=3))
                 else:
-                    # self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
                     self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
-        
+        elif gcn_type == 'gconv' and gcn_on:
+            self.gcn_layer_num = gcn_layer_num
+            self.convs = nn.ModuleList()
+            if gcn_layer_num == 1:
+                self.convs.append(pyg_nn.GCNConv(input_dim, output_dim))
+            elif gcn_layer_num > 1:
+                self.convs.append(pyg_nn.GCNConv(input_dim, hidden_dim, K=n_hop))
+            else:
+                raise ValueError("Unsupported gcn_layer_num {}")
+            
+            for i in range(self.gcn_layer_num - 1):
+                if i == self.gcn_layer_num - 2:
+                    self.convs.append(pyg_nn.GCNConv(hidden_dim, output_dim, K=3))
+                else:
+                    self.convs.append(pyg_nn.GCNConv(hidden_dim, hidden_dim, K=3))        
         
         self.dropout = dropout
 

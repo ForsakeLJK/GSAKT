@@ -29,6 +29,7 @@ def main():
     arg_parser.add_argument("--lr_decay", type=float, default=None)
     arg_parser.add_argument("--n_hop", type=int, default=3)
     arg_parser.add_argument("--gcn_on", type=int, default=1)
+    arg_parser.add_argument("--gcn_type", type=str, default='sgconv')
     
     args = arg_parser.parse_args()
     
@@ -54,7 +55,10 @@ def main():
     else:
         raise ValueError("gcn_on must be 0 or 1")
     
-    
+    if args.gcn_type in ['gconv', 'sgconv']:
+        gcn_type = args.gcn_type
+    else:
+        raise ValueError('unknown gcn_type {}'.format(args.gcn_type))
     
     if args.dataset == "assist09":
         single_skill_cnt = 123
@@ -108,14 +112,14 @@ def main():
     config.gcn_layer_num = gcn_layer_num
     config.n_hop = n_hop
     config.gcn_on = gcn_on
-    
+    config.gcn_type = gcn_type
     config.save_num = model_uuid
     
     config.node_embedding_size = node_embedding_size
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     print("gcn_on: {}".format(gcn_on))
-    
+    print("gcn_type: {}".format(gcn_type))
     if lr_decay is not None:
             print("lr_decay: True, {}".format(lr_decay))
     else:
@@ -125,7 +129,7 @@ def main():
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout, gcn_layer_num, n_hop)
+    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type)
     model.to(device)
     
     wandb.watch(model)
