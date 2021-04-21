@@ -1,6 +1,7 @@
 import json
 from os import getegid
 import torch
+from torch import IntTensor
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.data import Data
@@ -10,7 +11,7 @@ import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3):
         """[summary]
 
         Args:
@@ -25,7 +26,27 @@ class Model(nn.Module):
         
         self.device = device
         
-        self.gcn_layer_num = gcn_layer_num
+        self.gcn_on = gcn_on
+        
+        if gcn_on:
+            self.gcn_layer_num = gcn_layer_num
+            self.convs = nn.ModuleList()
+            # self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
+            if gcn_layer_num == 1:
+                self.convs.append(pyg_nn.SGConv(input_dim, output_dim, K=n_hop))
+            elif gcn_layer_num > 1:
+                self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=n_hop))
+            else:
+                raise ValueError("Unsupported gcn_layer_num {}")
+            
+            for i in range(self.gcn_layer_num - 1):
+                if i == self.gcn_layer_num - 2:
+                    self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=3))
+                else:
+                    # self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
+                    self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
+        
+        
         self.dropout = dropout
 
         with open(qs_graph_dir, "r") as src:
@@ -53,14 +74,6 @@ class Model(nn.Module):
         for _ in range(2):
             self.FFN.append(nn.Linear(output_dim, output_dim))
         
-        self.convs = nn.ModuleList()
-        # self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=3))
-        if gcn_layer_num == 1:
-            self.convs.append(pyg_nn.SGConv(input_dim, output_dim, K=n_hop))
-        elif gcn_layer_num > 1:
-            self.convs.append(pyg_nn.SGConv(input_dim, hidden_dim, K=n_hop))
-        else:
-            raise ValueError("Unsupported gcn_layer_num {}")
         
         self.lns = nn.ModuleList()
         self.lns.append(nn.LayerNorm(hidden_dim))
@@ -69,12 +82,6 @@ class Model(nn.Module):
         self.lns.append(nn.LayerNorm(output_dim))
         self.lns.append(nn.LayerNorm(output_dim))
         
-        for i in range(self.gcn_layer_num - 1):
-            if i == self.gcn_layer_num - 2:
-                self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=3))
-            else:
-                # self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
-                self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
         
         self.pos_embedding = nn.Embedding(seq_len - 1, output_dim)
         
@@ -93,29 +100,35 @@ class Model(nn.Module):
             hist_answers ([type]): (batch_size, seq_len - 1)
             new_seq ([type]): (batch_size, seq_len - 1)
         """
-        x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
-        
-        qs_graph_torch = Data(x= x, 
-                    edge_index=get_edge_index(self.qs_graph), 
-                    y=get_node_labels(self.qs_graph)).to(self.device)
-        
-        x, edge_index = qs_graph_torch.x, qs_graph_torch.edge_index
-        
-        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
-        
-        for i in range(self.gcn_layer_num):
-            x = self.convs[i](x, edge_index)
-            # emb = x
-            x = F.relu(x)
-            x = self.dropout_layers[0](x)
-            if not i == self.gcn_layer_num - 1:
-                x = self.lns[i](x)
+        if self.gcn_on:
+            x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
+            
+            qs_graph_torch = Data(x= x, 
+                        edge_index=get_edge_index(self.qs_graph), 
+                        y=get_node_labels(self.qs_graph)).to(self.device)
+            
+            x, edge_index = qs_graph_torch.x, qs_graph_torch.edge_index
+            
+            
+            
+            for i in range(self.gcn_layer_num):
+                x = self.convs[i](x, edge_index)
+                # emb = x
+                x = F.relu(x)
+                x = self.dropout_layers[0](x)
+                if not i == self.gcn_layer_num - 1:
+                    x = self.lns[i](x)
+                    
+            hist_seq_embed = get_embedding(hist_seq, x)
+            new_seq_embed = get_embedding(new_seq, x)
+        else:
+            hist_seq_embed = self.node_embedding_layer(hist_seq.type(IntTensor))
+            new_seq_embed = self.node_embedding_layer(new_seq.type(IntTensor))
         
         # (idx_size, hidden_dim)
         # print(x.shape)
         
-        hist_seq_embed = get_embedding(hist_seq, x)
-        new_seq_embed = get_embedding(new_seq, x)
+        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
         hist_answers_embed = get_embedding(hist_answers, correctness_embedding)
         
         # (batch_size, seq_len - 1, hidden_dim * 2) -> (batch_size, seq_len - 1, hidden_dim)

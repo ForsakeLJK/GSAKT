@@ -28,6 +28,7 @@ def main():
     # arg_parser.add_argument("--save_num", type=str, required=True)
     arg_parser.add_argument("--lr_decay", type=float, default=None)
     arg_parser.add_argument("--n_hop", type=int, default=3)
+    arg_parser.add_argument("--gcn_on", type=int, default=1)
     
     args = arg_parser.parse_args()
     
@@ -48,6 +49,12 @@ def main():
     node_feature_size = args.node_feature_size
     hidden_dim = args.hidden_dim
     node_embedding_size = args.node_embedding_size
+    if args.gcn_on in [0, 1]:
+        gcn_on = True if args.gcn_on == 1 else False
+    else:
+        raise ValueError("gcn_on must be 0 or 1")
+    
+    print("gcn_on: {}".format(gcn_on))
     
     if args.dataset == "assist09":
         single_skill_cnt = 123
@@ -105,6 +112,7 @@ def main():
     config.dropout = dropout
     config.gcn_layer_num = gcn_layer_num
     config.n_hop = n_hop
+    config.gcn_on = gcn_on
     
     config.save_num = model_uuid
     
@@ -114,7 +122,7 @@ def main():
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
-    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, dropout, gcn_layer_num, n_hop)
+    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout, gcn_layer_num, n_hop)
     model.to(device)
     
     wandb.watch(model)
