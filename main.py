@@ -34,8 +34,8 @@ def main():
     
     
     #* #### parameters ####
-    if args.dataset not in ["assist09", "ednet"]:
-        raise ValueError("dataset <{}> not supported".format(args.dataset))
+    if args.dataset not in ["assist09", "assist12", "ednet"]:
+        raise ValueError("unknown dataset <{}>".format(args.dataset))
     
     train_dir = "data/" + args.dataset + "/" + args.dataset + "_train.csv"
     test_dir = "data/" + args.dataset + "/" + args.dataset + "_test.csv"
@@ -54,7 +54,7 @@ def main():
     else:
         raise ValueError("gcn_on must be 0 or 1")
     
-    print("gcn_on: {}".format(gcn_on))
+    
     
     if args.dataset == "assist09":
         single_skill_cnt = 123
@@ -92,11 +92,6 @@ def main():
     
     lr_decay = args.lr_decay
     
-    if lr_decay is not None:
-        print("lr_decay: True, {}".format(lr_decay))
-    else:
-        print("lr_decay: False")
-    
     #* ####    end     ####
     
     wandb.init(entity="fmlab-its", project="KT")
@@ -119,6 +114,14 @@ def main():
     config.node_embedding_size = node_embedding_size
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
+    print("gcn_on: {}".format(gcn_on))
+    
+    if lr_decay is not None:
+            print("lr_decay: True, {}".format(lr_decay))
+    else:
+        print("lr_decay: False")
+    
+    print("n_hop: {}".format(n_hop))
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
