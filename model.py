@@ -122,8 +122,8 @@ class Model(nn.Module):
             hist_seq_embed = get_embedding(hist_seq, x)
             new_seq_embed = get_embedding(new_seq, x)
         else:
-            hist_seq_embed = self.node_embedding_layer(hist_seq.type(IntTensor))
-            new_seq_embed = self.node_embedding_layer(new_seq.type(IntTensor))
+            hist_seq_embed = self.node_embedding_layer(hist_seq.type(torch.LongTensor).to(self.device))
+            new_seq_embed = self.node_embedding_layer(new_seq.type(torch.LongTensor).to(self.device))
         
         # (idx_size, hidden_dim)
         # print(x.shape)
