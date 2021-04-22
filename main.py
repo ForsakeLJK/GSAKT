@@ -1,12 +1,10 @@
 from utils import evaluate
 from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import random_split
 from custom_dataset import CustomDataset
 import torch
 from torch.optim import lr_scheduler
 from model import Model
 from tqdm import tqdm
-from sklearn import metrics
 import numpy as np
 import wandb
 import argparse

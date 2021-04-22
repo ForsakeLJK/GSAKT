@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
-from utils import get_dataframe, get_metadata
+from utils import get_dataframe
 import numpy as np
 import torch
 import pandas as pd
