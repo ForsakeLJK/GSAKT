@@ -2,6 +2,7 @@
 sweep*
 wandb
 saved/
+pretrained/
 
 .bashrc
 .zshrc
