@@ -1,13 +1,10 @@
 import json
-from os import getegid
+from utils import get_edge_index, get_embedding, get_node_labels
 import torch
-from torch import IntTensor
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.data import Data
 import torch_geometric.nn as pyg_nn
-import torch_geometric.utils as pyg_utils
-import torch_geometric.transforms as T
 import numpy as np
   
 class Model(nn.Module):
@@ -169,48 +166,3 @@ class Model(nn.Module):
     def loss(self, pred, label):
         
         return F.binary_cross_entropy_with_logits(pred, label)
-
-# (batch_size, seq_len - 1), (num, emb_dim)
-def get_embedding(seq, embeddings):
-    seq = seq.unsqueeze(-1)
-    seq = seq.repeat(1, 1, embeddings.shape[1]).float()
-    
-    for i in range(seq.shape[0]):
-        for j in range(seq.shape[1]):
-            idx = int(seq[i, j, 0].item())
-            seq[i, j] = embeddings[idx]
-    
-    return seq
-
-def get_node_labels(qs_graph):
-    node_num = len(qs_graph)
-    node_labels = torch.empty(node_num, dtype=torch.short)
-    
-    for idx, node in enumerate(qs_graph):
-        if node["type"] == "skill":
-            node_labels[idx] = 0
-        elif node["type"] == "question":
-            node_labels[idx] = 1
-        else:
-            assert "Wrong Type {} in Node {}".format(node["type"], idx)
-            
-            
-    return node_labels
-
-def get_edge_index(qs_graph):
-    edge_num = 0
-    
-    for idx, node in enumerate(qs_graph):
-        edge_num += len(node["neighbor"])
-    
-    edge_index = torch.empty((2, edge_num), dtype=torch.long)
-    loc = 0
-    for idx, node in enumerate(qs_graph):
-        for n in node["neighbor"]:
-            edge_index[0][loc] = idx
-            edge_index[1][loc] = n
-            loc += 1
-    
-    assert loc == edge_num, "edge_num ({}) is not equal to loc ({})".format(edge_num, loc)
-    
-    return edge_index
