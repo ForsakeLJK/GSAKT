@@ -57,11 +57,11 @@ def main():
     
     print("start...")
     
-    for epoch in range(epoch_num):
+    for epoch in tqdm(range(epoch_num)):
         model.train()
         total_loss = 0.0
         
-        for pos_rw, neg_rw in tqdm(enumerate(loader)):
+        for _, (pos_rw, neg_rw) in tqdm(enumerate(loader)):
             loss = model.loss(pos_rw.to(device), neg_rw.to(device))
             optimizer.zero_grad()
             loss.backward()
