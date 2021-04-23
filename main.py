@@ -1,4 +1,5 @@
-from utils import evaluate
+import json
+from utils import evaluate, get_edge_index, get_node_labels
 from torch.utils.data.dataloader import DataLoader
 from custom_dataset import CustomDataset
 import torch
@@ -8,6 +9,8 @@ import numpy as np
 import wandb
 import argparse
 import shortuuid
+import torch_geometric.nn as pyg_nn
+from torch_geometric.data import Data
 
 def train(model : Model, optimizer : torch.optim.Adam, epoch_num, train_loader, test_loader, save_dir_best, save_dir_final, device : torch.device):
     
@@ -65,18 +68,19 @@ def init_proj(config):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--dataset", type=str, default="assist09")
     arg_parser.add_argument("--head_num", type=int, default=5)
-    arg_parser.add_argument("--batch_size", type=int, default=32)
-    arg_parser.add_argument("--seq_len", type=int, default=21)
-    arg_parser.add_argument("--epoch_num", type=int, default=100)
-    arg_parser.add_argument("--lr", type=float, default=0.01)
+    arg_parser.add_argument("--batch_size", type=int, default=16)
+    arg_parser.add_argument("--seq_len", type=int, default=41)
+    arg_parser.add_argument("--epoch_num", type=int, default=40)
+    arg_parser.add_argument("--lr", type=float, default=0.001)
     arg_parser.add_argument("--node_feature_size", type=int, default=100)
     arg_parser.add_argument("--node_embedding_size", type=int, default=100)
     arg_parser.add_argument("--hidden_dim", type=int, default=200)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
-    arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
-    arg_parser.add_argument("--n_hop", type=int, default=3)
+    arg_parser.add_argument("--gcn_layer_num", type=int, default=1)
+    arg_parser.add_argument("--n_hop", type=int, default=2)
     arg_parser.add_argument("--gcn_on", type=int, default=1)
     arg_parser.add_argument("--gcn_type", type=str, default='sgconv')
+    arg_parser.add_argument("--pretrain_uuid", type=str, default=None)
     
     args = arg_parser.parse_args()
 
@@ -87,6 +91,10 @@ def init_proj(config):
     test_dir = "data/" + args.dataset + "/" + args.dataset + "_test.csv"
     skill_matrix_dir = "data/" + args.dataset + "/" + args.dataset + "_skill_matrix.csv"
     qs_graph_dir = "data/" + args.dataset + "/" + args.dataset + "_qs_graph.json"
+    if args.pretrain_uuid is not None:
+        pretrain_dir = "pretrained/" + args.dataset + "_" + args.pretrain_uuid + ".pt"
+    else:
+        pretrain_dir = None
     # get skill cnt
     # skill idx -> 0 ~ skill_cnt - 1 
     # question idx -> skill_cnt ~ max_idx - 2
@@ -157,14 +165,15 @@ def init_proj(config):
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
     print("gcn_on: {}".format(gcn_on))
-    print("gcn_type: {}".format(gcn_type))
-    print("n_hop: {}".format(n_hop))
+    if gcn_on:
+        print("gcn_type: {}".format(gcn_type))
+        print("n_hop: {}".format(n_hop))
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
     return  lr, node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type, batch_size, epoch_num,\
             single_skill_cnt, skill_cnt, max_idx, device,\
-            train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final
+            train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final, pretrain_dir
 
 def main():
     
@@ -172,9 +181,28 @@ def main():
     
     lr, node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type, batch_size, epoch_num,\
         single_skill_cnt, skill_cnt, max_idx, device,\
-        train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final = init_proj(wandb.config)
+        train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final, pretrain_dir = init_proj(wandb.config)
     
-    model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type)
+    if pretrain_dir is None:
+        model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, dropout, n_hop, gcn_type, gcn_layer_num, gcn_on)
+    else:
+        with open(qs_graph_dir, "r") as src:
+            qs_graph = json.load(src)
+        qs_graph_torch = Data(x= None,
+            edge_index=get_edge_index(qs_graph), 
+            y=get_node_labels(qs_graph)).to(device)
+        pretrained_model = pyg_nn.Node2Vec(edge_index=qs_graph_torch.edge_index, embedding_dim=node_feature_size, 
+                                walk_length=20, context_size=10, walks_per_node=10, 
+                                num_negative_samples=1, p=1, q=1, sparse=True)
+        pretrained_model.load_state_dict(torch.load(pretrain_dir, map_location=device))
+        pretrained_model.to(device)
+        pretrained_model.eval()
+        pretrained_embedding = pretrained_model()
+        
+        print("pretrained model loaded.")
+        
+        model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, dropout, n_hop, gcn_type, gcn_layer_num, gcn_on, pretrained_embedding)
+    
     model.to(device)
     
     wandb.watch(model)

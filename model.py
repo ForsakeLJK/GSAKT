@@ -8,7 +8,7 @@ import torch_geometric.nn as pyg_nn
 import numpy as np
   
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout=[0.3, 0.2, 0.2], gcn_layer_num=3, n_hop=3, gcn_type='sgconv'):
+    def __init__(self, input_dim, hidden_dim, output_dim, seq_len, head_num, qs_graph_dir, device, dropout, n_hop, gcn_type, gcn_layer_num, gcn_on, pretrained_embedding=None, freeze=True):
         """[summary]
 
         Args:
@@ -24,6 +24,11 @@ class Model(nn.Module):
         self.device = device
         
         self.gcn_on = gcn_on
+        
+        if pretrained_embedding is not None:
+            self.pretrained_embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=freeze)
+        else:
+            self.pretrained_embedding = None
         
         if gcn_type == 'sgconv' and gcn_on:
             self.gcn_layer_num = gcn_layer_num
@@ -66,7 +71,8 @@ class Model(nn.Module):
         
         self.correctness_embedding_layer = nn.Embedding(2, input_dim)
         
-        self.node_embedding_layer = nn.Embedding(len(self.qs_graph), input_dim)
+        if self.pretrained_embedding is None:
+            self.node_embedding_layer = nn.Embedding(len(self.qs_graph), input_dim)
         
         self.linears = nn.ModuleList()
         self.linears.append(nn.Linear(output_dim*2, output_dim, bias=True))
@@ -110,7 +116,10 @@ class Model(nn.Module):
             new_seq ([type]): (batch_size, seq_len - 1)
         """
         if self.gcn_on:
-            x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
+            if self.pretrained_embedding is None:
+                x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
+            else:
+                x = self.pretrained_embedding(torch.arange(len(self.qs_graph)).to(self.device))
             
             qs_graph_torch = Data(x= x, 
                         edge_index=get_edge_index(self.qs_graph), 
@@ -122,20 +131,21 @@ class Model(nn.Module):
             
             for i in range(self.gcn_layer_num):
                 x = self.convs[i](x, edge_index)
-                # emb = x
                 x = F.relu(x)
                 x = self.dropout_layers[0](x)
                 if not i == self.gcn_layer_num - 1:
                     x = self.lns[i](x)
                     
-            hist_seq_embed = get_embedding(hist_seq, x)
-            new_seq_embed = get_embedding(new_seq, x)
+            lookup_table = nn.Embedding.from_pretrained(x, freeze=True)
+            hist_seq_embed = lookup_table(hist_seq.type(torch.LongTensor).to(self.device))
+            new_seq_embed = lookup_table(new_seq.type(torch.LongTensor).to(self.device))
+            
+        elif self.pretrained_embedding is not None:
+            hist_seq_embed = self.pretrained_embedding(hist_seq.type(torch.LongTensor).to(self.device))
+            new_seq_embed = self.pretrained_embedding(new_seq.type(torch.LongTensor).to(self.device))
         else:
             hist_seq_embed = self.node_embedding_layer(hist_seq.type(torch.LongTensor).to(self.device))
             new_seq_embed = self.node_embedding_layer(new_seq.type(torch.LongTensor).to(self.device))
-        
-        # (idx_size, hidden_dim)
-        # print(x.shape)
         
         correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
         hist_answers_embed = get_embedding(hist_answers, correctness_embedding)
