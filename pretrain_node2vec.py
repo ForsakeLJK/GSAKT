@@ -37,7 +37,7 @@ def main():
             y=get_node_labels(qs_graph)).to(device)
     
     model_uuid = shortuuid.uuid()
-    save_dir = "pretrained/" + model_uuid + ".pt"
+    save_dir = "pretrained/" + args.dataset + "_" + model_uuid + ".pt"
     
     model = pyg_nn.Node2Vec(edge_index=qs_graph_torch.edge_index, embedding_dim=embedding_dim, 
                             walk_length=20, context_size=10, walks_per_node=10, 
