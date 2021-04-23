@@ -2,7 +2,6 @@ from utils import evaluate
 from torch.utils.data.dataloader import DataLoader
 from custom_dataset import CustomDataset
 import torch
-from torch.optim import lr_scheduler
 from model import Model
 from tqdm import tqdm
 import numpy as np
@@ -10,7 +9,59 @@ import wandb
 import argparse
 import shortuuid
 
-def main():
+def train(model : Model, optimizer : torch.optim.Adam, epoch_num, train_loader, test_loader, save_dir_best, save_dir_final, device : torch.device):
+    
+    train_losses = []
+    
+    best_test_auc = 0.0
+    
+    for epoch in tqdm(range(epoch_num)):
+            
+        print("epoch {} start".format(epoch + 1))
+        
+        model.train()
+        
+        for _, (hist_seq, hist_answers, new_seq, target_answers, _) in tqdm(enumerate(train_loader)):
+            
+            hist_seq, hist_answers, new_seq, target_answers = \
+                hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)
+            
+            # * foward pass
+            # (batch_size, seq_len - 1, 1)
+            pred = model(hist_seq, hist_answers, new_seq)
+
+            # * compute loss
+            loss = model.loss(pred, target_answers.float())
+            
+            train_losses.append(loss.item())
+
+            # * backward pass & update
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+        epoch_loss = np.sum(train_losses) / len(train_losses)
+        
+        model.eval()
+        
+        test_auc = evaluate(model, test_loader, device)
+        
+        print("epoch {}: train_loss: {}, test_auc: {}".format(epoch+1, epoch_loss, test_auc))
+        
+        wandb.log({"train_loss": epoch_loss, "test_auc": test_auc})
+        
+        if test_auc > best_test_auc:
+            best_test_auc = test_auc
+            torch.save(model.state_dict(), save_dir_best)
+            print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
+        
+    wandb.log({"best_auc": best_test_auc})
+    print("best_auc: {}".format(best_test_auc))
+    torch.save(model.state_dict(), save_dir_final)
+    
+    print("done.")
+
+def init_proj(config):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--dataset", type=str, default="assist09")
     arg_parser.add_argument("--head_num", type=int, default=5)
@@ -23,16 +74,12 @@ def main():
     arg_parser.add_argument("--hidden_dim", type=int, default=200)
     arg_parser.add_argument("--dropout", type=float, nargs="?", default=[0.3, 0.2, 0.2])
     arg_parser.add_argument("--gcn_layer_num", type=int, default=3)
-    # arg_parser.add_argument("--save_num", type=str, required=True)
-    arg_parser.add_argument("--lr_decay", type=float, default=None)
     arg_parser.add_argument("--n_hop", type=int, default=3)
     arg_parser.add_argument("--gcn_on", type=int, default=1)
     arg_parser.add_argument("--gcn_type", type=str, default='sgconv')
     
     args = arg_parser.parse_args()
-    
-    
-    #* #### parameters ####
+
     if args.dataset not in ["assist09", "assist12", "ednet"]:
         raise ValueError("unknown dataset <{}>".format(args.dataset))
     
@@ -92,13 +139,6 @@ def main():
     gcn_layer_num = args.gcn_layer_num
     n_hop = args.n_hop
     
-    lr_decay = args.lr_decay
-    
-    #* ####    end     ####
-    
-    wandb.init(entity="fmlab-its", project="KT")
-    
-    config = wandb.config
     config.dataset = args.dataset
     config.node_feature_size = node_feature_size
     config.hidden_dim = hidden_dim
@@ -118,14 +158,21 @@ def main():
     print("cuda availability: {}".format(torch.cuda.is_available()))
     print("gcn_on: {}".format(gcn_on))
     print("gcn_type: {}".format(gcn_type))
-    if lr_decay is not None:
-            print("lr_decay: True, {}".format(lr_decay))
-    else:
-        print("lr_decay: False")
-    
     print("n_hop: {}".format(n_hop))
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
+    return  lr, node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type, batch_size, epoch_num,\
+            single_skill_cnt, skill_cnt, max_idx, device,\
+            train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final
+
+def main():
+    
+    wandb.init(entity="fmlab-its", project="KT")
+    
+    lr, node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type, batch_size, epoch_num,\
+        single_skill_cnt, skill_cnt, max_idx, device,\
+        train_dir, test_dir, qs_graph_dir, save_dir_best, save_dir_final = init_proj(wandb.config)
     
     model = Model(node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, qs_graph_dir, device, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type)
     model.to(device)
@@ -133,93 +180,14 @@ def main():
     wandb.watch(model)
     
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-    # optimizer = torch.optim.SparseAdam(list(model.parameters()), lr=lr)
-    if lr_decay is not None:
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=40, gamma=lr_decay)
     
     train_set = CustomDataset(train_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
-    # train_set, val_set = random_split(train_set, [0.7 * len(train_set), 0.3 * len(train_set)])
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    # val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
     
     test_set = CustomDataset(test_dir, [single_skill_cnt, skill_cnt, max_idx], seq_len)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
-    
-    # print("train samples: {}, val samples: {}, test samples: {}"\
-    #     .format(len(train_set), len(test_set)))
-    
-    print("start...")
-    
-    train_losses = []
-    
-    best_test_auc = 0.0
-    # best_test_auc = 0.0
-    
-    for epoch in tqdm(range(epoch_num)):
-        
-        print("epoch {} start".format(epoch + 1))
-        
-        model.train()
-        
-        
-        # train_preds = []
-        # train_targets = []
-        
-        for _, (hist_seq, hist_answers, new_seq, target_answers, _) in tqdm(enumerate(train_loader)):
-            
-            hist_seq, hist_answers, new_seq, target_answers = \
-                hist_seq.to(device), hist_answers.to(device), new_seq.to(device), target_answers.to(device)
-            
-            # * foward pass
-            # pred = model(x)
-            # (batch_size, seq_len - 1, 1)
-            pred = model(hist_seq, hist_answers, new_seq)
-            
-            # train_preds.append(pred)
-            # train_targets.append(target_answers)
-            
-            # (batch_size, seq_len - 1, 1) -> (batch_size, seq_len)
-            # pred = pred.squeeze()
-    
-            # * compute loss
-            loss = model.loss(pred, target_answers.float())
-            
-            train_losses.append(loss.item())
-    
-            # * backward pass & update
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-        epoch_loss = np.sum(train_losses) / len(train_losses)
-        
-        # train_targets = torch.cat(train_targets)
-        # train_preds = torch.cat(train_preds).sigmoid()
-        
-        # train_auc = metrics.roc_auc_score(train_targets, train_preds)
-        
-        model.eval()
-        
-        test_auc = evaluate(model, test_loader, device)
-        
-        # print("epoch {}: train_loss: {}, valid_auc: {}, test_auc: {}".format(epoch+1, epoch_loss, valid_auc, test_auc))
-        print("epoch {}: train_loss: {}, test_auc: {}".format(epoch+1, epoch_loss, test_auc))
-        
-        wandb.log({"train_loss": epoch_loss, "test_auc": test_auc})
-        
-        if test_auc > best_test_auc:
-            best_test_auc = test_auc
-            torch.save(model.state_dict(), save_dir_best)
-            print("best_auc: {} at epoch {}".format(best_test_auc, epoch + 1))
-        
-        if lr_decay is not None:
-            scheduler.step()
-        
-    wandb.log({"best_auc": best_test_auc})
-    print("best_auc: {}".format(best_test_auc))
-    torch.save(model.state_dict(), save_dir_final)
-    
-    print("done.")
+
+    train(model, optimizer, epoch_num, train_loader, test_loader, save_dir_best, save_dir_final, device)
     
     return 
 
