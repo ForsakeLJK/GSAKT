@@ -26,7 +26,7 @@ class Model(nn.Module):
         self.gcn_on = gcn_on
         
         if pretrained_embedding is not None:
-            self.pretrained_embedding = nn.Embedding.from_pretrained(pretrained_embedding, freeze=freeze)
+            self.pretrained_embedding = pretrained_embedding
         else:
             self.pretrained_embedding = None
         
@@ -119,7 +119,7 @@ class Model(nn.Module):
             if self.pretrained_embedding is None:
                 x = self.node_embedding_layer(torch.arange(len(self.qs_graph)).to(self.device))
             else:
-                x = self.pretrained_embedding(torch.arange(len(self.qs_graph)).to(self.device))
+                x = self.pretrained_embedding
             
             qs_graph_torch = Data(x= x, 
                         edge_index=get_edge_index(self.qs_graph), 
@@ -127,28 +127,26 @@ class Model(nn.Module):
             
             x, edge_index = qs_graph_torch.x, qs_graph_torch.edge_index
             
-            
-            
             for i in range(self.gcn_layer_num):
                 x = self.convs[i](x, edge_index)
                 x = F.relu(x)
                 x = self.dropout_layers[0](x)
                 if not i == self.gcn_layer_num - 1:
                     x = self.lns[i](x)
-                    
-            lookup_table = nn.Embedding.from_pretrained(x, freeze=True)
-            hist_seq_embed = lookup_table(hist_seq.type(torch.LongTensor).to(self.device))
-            new_seq_embed = lookup_table(new_seq.type(torch.LongTensor).to(self.device))
+            
+            hist_seq_embed = x[hist_seq.long(), :]
+            new_seq_embed = x[new_seq.long(), :]
             
         elif self.pretrained_embedding is not None:
-            hist_seq_embed = self.pretrained_embedding(hist_seq.type(torch.LongTensor).to(self.device))
-            new_seq_embed = self.pretrained_embedding(new_seq.type(torch.LongTensor).to(self.device))
+            hist_seq_embed = self.pretrained_embedding[hist_seq.long(), :]
+            new_seq_embed = self.pretrained_embedding[new_seq.long(), :]
         else:
-            hist_seq_embed = self.node_embedding_layer(hist_seq.type(torch.LongTensor).to(self.device))
-            new_seq_embed = self.node_embedding_layer(new_seq.type(torch.LongTensor).to(self.device))
+            hist_seq_embed = self.node_embedding_layer(hist_seq.long())
+            new_seq_embed = self.node_embedding_layer(new_seq.long())
         
-        correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
-        hist_answers_embed = get_embedding(hist_answers, correctness_embedding)
+        # correctness_embedding = self.correctness_embedding_layer(torch.arange(2).to(self.device))
+        # hist_answers_embed = get_embedding(hist_answers, correctness_embedding)
+        hist_answers_embed = self.correctness_embedding_layer(hist_answers.long())
         
         # (batch_size, seq_len - 1, hidden_dim * 2) -> (batch_size, seq_len - 1, hidden_dim)
         interaction_embed = self.linears[0](torch.cat([hist_seq_embed, hist_answers_embed], dim=2))

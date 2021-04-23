@@ -11,6 +11,7 @@ import argparse
 import shortuuid
 import torch_geometric.nn as pyg_nn
 from torch_geometric.data import Data
+import warnings
 
 def train(model : Model, optimizer : torch.optim.Adam, epoch_num, train_loader, test_loader, save_dir_best, save_dir_final, device : torch.device):
     
@@ -19,8 +20,6 @@ def train(model : Model, optimizer : torch.optim.Adam, epoch_num, train_loader, 
     best_test_auc = 0.0
     
     for epoch in tqdm(range(epoch_num)):
-            
-        print("epoch {} start".format(epoch + 1))
         
         model.train()
         
@@ -92,7 +91,7 @@ def init_proj(config):
     skill_matrix_dir = "data/" + args.dataset + "/" + args.dataset + "_skill_matrix.csv"
     qs_graph_dir = "data/" + args.dataset + "/" + args.dataset + "_qs_graph.json"
     if args.pretrain_uuid is not None:
-        pretrain_dir = "pretrained/" + args.dataset + "_" + args.pretrain_uuid + ".pt"
+        pretrain_dir = "pretrained/" + args.dataset + "/" + args.pretrain_uuid + ".pt"
     else:
         pretrain_dir = None
     # get skill cnt
@@ -164,12 +163,15 @@ def init_proj(config):
     config.node_embedding_size = node_embedding_size
     
     print("cuda availability: {}".format(torch.cuda.is_available()))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("device: {}".format(device))
+    
     print("gcn_on: {}".format(gcn_on))
     if gcn_on:
         print("gcn_type: {}".format(gcn_type))
         print("n_hop: {}".format(n_hop))
     
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
         
     return  lr, node_feature_size, hidden_dim, node_embedding_size, seq_len, head_num, gcn_on, dropout, gcn_layer_num, n_hop, gcn_type, batch_size, epoch_num,\
             single_skill_cnt, skill_cnt, max_idx, device,\
@@ -220,6 +222,6 @@ def main():
     return 
 
 if __name__ == '__main__':
-    
+    warnings.filterwarnings("ignore")
     main()
     
