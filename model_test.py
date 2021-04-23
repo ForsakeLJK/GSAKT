@@ -57,7 +57,7 @@ test_loader = DataLoader(test_set, batch_size=batch_size)
 print("cuda availability: {}".format(torch.cuda.is_available()))
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+# TODO: NEED TO BE CHANGED since parameters are changed
 model = Model(node_feature_size, hidden_dim, node_feature_size, seq_len, head_num, qs_graph_dir, device)
 model.load_state_dict(torch.load(model_dir, map_location=device))
 model.to(device)
