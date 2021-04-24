@@ -62,6 +62,11 @@ def main():
     config.save_num = model_uuid
     config.epoch_num = epoch_num
     config.embedding_dim = embedding_dim
+    config.dataset = args.dataset
+    config.p = args.p
+    config.q = args.q
+    config.walk_length = walk_length
+    config.context_size = context_size
     
     wandb.watch(model)
     
