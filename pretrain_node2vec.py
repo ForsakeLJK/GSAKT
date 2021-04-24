@@ -17,9 +17,19 @@ def main():
     arg_parser.add_argument("--embedding_dim", type=int, default=100)
     arg_parser.add_argument("--epoch_num", type=int, default=30)
     arg_parser.add_argument("--device", type=str, default='cpu')
+    arg_parser.add_argument("--p", type=float, default=1)
+    arg_parser.add_argument("--q", type=float, default=1)
+    arg_parser.add_argument("--walk_length", type=int, default=20)
+    arg_parser.add_argument("--context_size", type=int, default=10)
+    arg_parser.add_argument("--walks_per_node", type=int, default=10)
     
     args = arg_parser.parse_args()
     
+    p = args.p
+    q = args.q
+    walk_length = args.walk_length
+    context_size = args.context_size
+    walks_per_node = args.walks_per_node
     embedding_dim = args.embedding_dim
     qs_graph_dir = "data/" + args.dataset + "/" + args.dataset + "_qs_graph.json"
     epoch_num = args.epoch_num
@@ -37,11 +47,11 @@ def main():
             y=get_node_labels(qs_graph)).to(device)
     
     model_uuid = shortuuid.uuid()
-    save_dir = "pretrained/" + args.dataset + "_" + model_uuid + ".pt"
+    save_dir = "pretrained/" + args.dataset + "/" + model_uuid + ".pt"
     
     model = pyg_nn.Node2Vec(edge_index=qs_graph_torch.edge_index, embedding_dim=embedding_dim, 
-                            walk_length=20, context_size=10, walks_per_node=10, 
-                            num_negative_samples=1, p=1, q=1, sparse=True)
+                            walk_length=walk_length, context_size=context_size, walks_per_node=walks_per_node, 
+                            num_negative_samples=1, p=p, q=q, sparse=True)
     model.to(device)
     loader = model.loader(batch_size=128, shuffle=True)
     
