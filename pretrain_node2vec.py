@@ -22,6 +22,7 @@ def main():
     arg_parser.add_argument("--walk_length", type=int, default=20)
     arg_parser.add_argument("--context_size", type=int, default=10)
     arg_parser.add_argument("--walks_per_node", type=int, default=10)
+    arg_parser.add_argument("--batch_size", type=int, default=512)
     
     args = arg_parser.parse_args()
     
@@ -54,7 +55,7 @@ def main():
                             walk_length=walk_length, context_size=context_size, walks_per_node=walks_per_node, 
                             num_negative_samples=1, p=p, q=q, sparse=True)
     model.to(device)
-    loader = model.loader(batch_size=128, shuffle=True)
+    loader = model.loader(batch_size=args.batch_size, shuffle=True)
     
     optimizer = torch.optim.SparseAdam(list(model.parameters()), lr=0.01)
     
@@ -68,7 +69,7 @@ def main():
     config.q = args.q
     config.walk_length = walk_length
     config.context_size = context_size
-    
+    config.batch_size = args.batch_size
     wandb.watch(model)
     
     print("start...")
