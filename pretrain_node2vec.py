@@ -47,7 +47,8 @@ def main():
             y=get_node_labels(qs_graph)).to(device)
     
     model_uuid = shortuuid.uuid()
-    save_dir = "pretrained/" + args.dataset + "/" + model_uuid + ".pt"
+    save_dir_lowest = "pretrained/" + args.dataset + "/" + model_uuid + "_lowest.pt"
+    save_dir_final = "pretrained/" + args.dataset + "/" + model_uuid + "_final.pt"
     
     model = pyg_nn.Node2Vec(edge_index=qs_graph_torch.edge_index, embedding_dim=embedding_dim, 
                             walk_length=walk_length, context_size=context_size, walks_per_node=walks_per_node, 
@@ -71,6 +72,7 @@ def main():
     wandb.watch(model)
     
     print("start...")
+    lowest_loss = 5.0
     
     for epoch in tqdm(range(epoch_num)):
         model.train()
@@ -86,9 +88,15 @@ def main():
         avg_loss = total_loss / len(loader)
         
         print("loss: {}".format(avg_loss))
+
+        wandb.log({"train_loss": avg_loss})
+
+        if avg_loss < lowest_loss:
+            print("lowest loss: {}".format(avg_loss))
+            torch.save(model.state_dict(), save_dir_lowest) 
+            lowest_loss = avg_loss 
     
-    
-    torch.save(model.state_dict(), save_dir)
+    torch.save(model.state_dict(), save_dir_final)
     
     print("done.")
     
