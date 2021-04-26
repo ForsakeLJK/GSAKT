@@ -1,4 +1,4 @@
 # G-SAKT
-GCN + SAKT
+Node2vec + SGCN + (slightly modified) SAKT
 
 Unfinished
