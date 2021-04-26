@@ -65,12 +65,18 @@ def slice_discard_seq( df : pd.DataFrame, seq_len):
                 row[2][i * seq_len : ((i+1) * seq_len - 1)], row[3][i * seq_len : ((i+1) * seq_len - 1)]]
              
             loc += 1
+        
+        remain = row[0] % seq_len
+        if remain != 0:
+            sliced_df.loc[loc] = [remain, row[1][slice_num * seq_len : ], row[2][slice_num * seq_len : ], \
+                row[3][slice_num * seq_len :]]
+            loc += 1
             
     assert loc == len(sliced_df), "loc error in slice_df"
     
     # discard old uncliced long seq
     df = df[df["seq_len"] <= seq_len]
-    
+    df = df[df["seq_len"] >= 3] 
     # append new df
     df = df.append(sliced_df, ignore_index=True)
     
