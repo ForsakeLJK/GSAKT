@@ -42,9 +42,9 @@ class Model(nn.Module):
             
             for i in range(self.gcn_layer_num - 1):
                 if i == self.gcn_layer_num - 2:
-                    self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=3))
+                    self.convs.append(pyg_nn.SGConv(hidden_dim, output_dim, K=n_hop))
                 else:
-                    self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=3))
+                    self.convs.append(pyg_nn.SGConv(hidden_dim, hidden_dim, K=n_hop))
         elif gcn_type == 'gconv' and gcn_on:
             self.gcn_layer_num = gcn_layer_num
             self.convs = nn.ModuleList()
