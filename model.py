@@ -51,15 +51,15 @@ class Model(nn.Module):
             if gcn_layer_num == 1:
                 self.convs.append(pyg_nn.GCNConv(input_dim, output_dim))
             elif gcn_layer_num > 1:
-                self.convs.append(pyg_nn.GCNConv(input_dim, hidden_dim, K=n_hop))
+                self.convs.append(pyg_nn.GCNConv(input_dim, hidden_dim))
             else:
                 raise ValueError("Unsupported gcn_layer_num {}")
             
             for i in range(self.gcn_layer_num - 1):
                 if i == self.gcn_layer_num - 2:
-                    self.convs.append(pyg_nn.GCNConv(hidden_dim, output_dim, K=3))
+                    self.convs.append(pyg_nn.GCNConv(hidden_dim, output_dim))
                 else:
-                    self.convs.append(pyg_nn.GCNConv(hidden_dim, hidden_dim, K=3))        
+                    self.convs.append(pyg_nn.GCNConv(hidden_dim, hidden_dim))        
         
         self.dropout = dropout
 
