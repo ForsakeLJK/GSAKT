@@ -107,7 +107,7 @@ def init_proj(config):
     else:
         raise ValueError("gcn_on must be 0 or 1")
     
-    if args.gcn_type in ['gconv', 'sgconv']:
+    if args.gcn_type in ['gconv', 'sgconv', 'gat']:
         gcn_type = args.gcn_type
     else:
         raise ValueError('unknown gcn_type {}'.format(args.gcn_type))
