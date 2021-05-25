@@ -75,6 +75,21 @@ class Model(nn.Module):
                     self.convs.append(pyg_nn.GATConv(hidden_dim, output_dim))
                 else:
                     self.convs.append(pyg_nn.GATConv(hidden_dim, hidden_dim))            
+        elif gcn_type == 'sage' and gcn_on:
+            self.gcn_layer_num = gcn_layer_num
+            self.convs = nn.ModuleList()
+            if gcn_layer_num == 1:
+                self.convs.append(pyg_nn.SAGEConv(input_dim, output_dim))
+            elif gcn_layer_num > 1:
+                self.convs.append(pyg_nn.SAGEConv(input_dim, hidden_dim))
+            else:
+                raise ValueError("Unsupported gcn_layer_num {}")
+            
+            for i in range(self.gcn_layer_num - 1):
+                if i == self.gcn_layer_num - 2:
+                    self.convs.append(pyg_nn.SAGEConv(hidden_dim, output_dim))
+                else:
+                    self.convs.append(pyg_nn.SAGEConv(hidden_dim, hidden_dim))
         
         self.dropout = dropout
 
