@@ -91,7 +91,7 @@ def init_proj(config):
     skill_matrix_dir = "data/" + args.dataset + "/" + args.dataset + "_skill_matrix.csv"
     qs_graph_dir = "data/" + args.dataset + "/" + args.dataset + "_qs_graph.json"
     if args.pretrain_uuid is not None:
-        pretrain_dir = "pretrained/" + args.dataset + "/" + args.pretrain_uuid + ".pt"
+        pretrain_dir = "pretrained/" + args.dataset + "/" + args.pretrain_uuid + "_lowest.pt"
     else:
         pretrain_dir = None
     # get skill cnt
@@ -107,7 +107,7 @@ def init_proj(config):
     else:
         raise ValueError("gcn_on must be 0 or 1")
     
-    if args.gcn_type in ['gconv', 'sgconv', 'gat']:
+    if args.gcn_type in ['gconv', 'sgconv', 'gat', 'sage']:
         gcn_type = args.gcn_type
     else:
         raise ValueError('unknown gcn_type {}'.format(args.gcn_type))
