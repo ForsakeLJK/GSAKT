@@ -64,9 +64,9 @@ class Model(nn.Module):
             self.gcn_layer_num = gcn_layer_num
             self.convs = nn.ModuleList()
             if gcn_layer_num == 1:
-                self.convs.append(pyg_nn.GATConv(input_dim, output_dim))
+                self.convs.append(pyg_nn.GATConv(input_dim, output_dim, heads=5, concat=False))
             elif gcn_layer_num > 1:
-                self.convs.append(pyg_nn.GATConv(input_dim, hidden_dim))
+                self.convs.append(pyg_nn.GATConv(input_dim, hidden_dim, heads=5, concat=False))
             else:
                 raise ValueError("Unsupported gcn_layer_num {}")
             
